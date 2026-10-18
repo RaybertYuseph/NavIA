@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { db } from '@/lib/offline/db';
 import { enqueue, onPendingChange, startAutoSync } from '@/lib/offline/sync';
+import { AvailabilityToggle } from './AvailabilityToggle';
 import type { TripEventType } from '@/lib/offline/types';
 import { formatHour } from '@/lib/time';
 import { STATUS_LABEL, STATUS_STYLE, sortedStops, type Trip } from '@/features/trips/types';
@@ -18,19 +20,21 @@ const GPS_LABEL: Record<GpsState, string> = {
 
 const storageKey = (tripId: string) => `navia:trip:${tripId}`;
 
-const RANK = { scheduled: 0, en_camino: 1, en_parada: 1, finalizada: 2, cancelada: 2 } as const;
-
 /**
- * Estado al abrir: el del servidor, salvo que este teléfono tenga uno igual o más avanzado
- * (botones tocados sin señal que aún no llegan).
+ * Estado al abrir: el del servidor, salvo que este teléfono tenga botones tocados sin señal
+ * que aún no llegan (eventos en la cola). Así un reinicio de la demo no queda tapado por
+ * un estado viejo guardado en el teléfono.
  */
-function loadLocal(trip: Trip): DriverState {
+async function loadInitialState(trip: Trip): Promise<DriverState> {
   const server: DriverState = { status: trip.status, currentStopId: trip.current_stop_id };
   try {
+    const pending = await db.queue.where('trip_id').equals(trip.id).filter((i) => i.kind === 'event').count();
     const raw = localStorage.getItem(storageKey(trip.id));
-    if (!raw) return server;
-    const local = JSON.parse(raw) as DriverState;
-    return RANK[local.status] >= RANK[server.status] ? local : server;
+    if (!pending || !raw) {
+      localStorage.removeItem(storageKey(trip.id));
+      return server;
+    }
+    return JSON.parse(raw) as DriverState;
   } catch {
     return server;
   }
@@ -71,7 +75,13 @@ function TripControls({ trip }: { trip: Trip }) {
   const [state, setState] = useState<DriverState>({ status: trip.status, currentStopId: trip.current_stop_id });
   const [pending, setPending] = useState(0);
 
-  useEffect(() => setState(loadLocal(trip)), [trip]);
+  useEffect(() => {
+    let cancelled = false;
+    void loadInitialState(trip).then((s) => !cancelled && setState(s));
+    return () => {
+      cancelled = true;
+    };
+  }, [trip]);
   useEffect(() => onPendingChange(setPending), []);
 
   const active = state.status === 'en_camino' || state.status === 'en_parada';
@@ -81,6 +91,7 @@ function TripControls({ trip }: { trip: Trip }) {
   const actions = allowedActions(state, stops);
   const upcoming = nextStop(stops, state.currentStopId);
   const current = stops.find((s) => s.id === state.currentStopId);
+  const currentIdx = stops.findIndex((s) => s.id === state.currentStopId);
 
   async function send(type: TripEventType, stopId: string | null = null) {
     const next = applyEvent(state, type, stopId);
@@ -93,6 +104,8 @@ function TripControls({ trip }: { trip: Trip }) {
 
   return (
     <>
+      {trip.vehicles && <AvailabilityToggle vehicle={trip.vehicles} />}
+
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">{trip.routes?.name}</h2>
@@ -108,10 +121,28 @@ function TripControls({ trip }: { trip: Trip }) {
           {GPS_LABEL[gps]}
           {pending > 0 ? ` · ${pending} por enviar (se envían al tener señal)` : ' · Todo enviado'}
         </p>
+        <ol className="mt-3 flex flex-col gap-1 border-t border-slate-100 pt-3">
+          {stops.map((s, i) => {
+            const done = state.status === 'finalizada' || (currentIdx >= 0 && (i < currentIdx || (i === currentIdx && state.status !== 'en_parada')));
+            const here = i === currentIdx && state.status === 'en_parada';
+            return (
+              <li key={s.id} className="flex items-center gap-2 text-sm">
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs text-white ${
+                    done ? 'bg-emerald-600' : here ? 'bg-amber-500' : 'bg-slate-300'
+                  }`}
+                >
+                  {done ? '✓' : i + 1}
+                </span>
+                <span className={done ? 'text-slate-500' : here ? 'font-semibold' : ''}>{s.name}</span>
+              </li>
+            );
+          })}
+        </ol>
       </section>
 
       <BigButton color="bg-emerald-600" disabled={!actions.enCamino} onClick={() => send('en_camino')}>
-        {state.status === 'en_parada' ? 'Seguir en camino' : 'En camino'}
+        {state.status === 'en_parada' ? 'Parada completada · seguir' : 'En camino'}
       </BigButton>
       <BigButton
         color="bg-amber-500"
