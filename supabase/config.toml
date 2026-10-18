@@ -1,0 +1,38 @@
+# Configuración mínima para `npx supabase start` (requiere Docker).
+project_id = "navia"
+
+[api]
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+port = 54323
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+# Teléfonos de prueba del seed: entran con el código 123456 sin enviar SMS.
+[auth.sms.test_otp]
+584140000001 = "123456"
+584140000002 = "123456"
+
+[realtime]
+enabled = true
+
+# Supabase local exige un proveedor de SMS para habilitar el login por teléfono.
+# Con los números de test_otp no se envía nada; en producción se usa Twilio
+# (o WhatsApp vía Twilio) con credenciales reales en el dashboard.
+[auth.sms.twilio]
+enabled = true
+account_sid = "local"
+message_service_sid = "local"
+auth_token = "local"

@@ -1,0 +1,31 @@
+import { z } from 'zod';
+
+export const tripEventType = z.enum(['en_camino', 'en_parada', 'parada_completada', 'fin_de_ruta', 'cancelada']);
+export type TripEventType = z.infer<typeof tripEventType>;
+
+/** Lo que el teléfono del conductor guarda y envía. El id es el client_event_id. */
+export const queueItem = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('event'),
+    id: z.string().uuid(),
+    trip_id: z.string().uuid(),
+    type: tripEventType,
+    stop_id: z.string().uuid().nullable(),
+    occurred_at: z.string().datetime({ offset: true }),
+  }),
+  z.object({
+    kind: z.literal('ping'),
+    id: z.string().uuid(),
+    trip_id: z.string().uuid(),
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    speed_kmh: z.number().nullable(),
+    recorded_at: z.string().datetime({ offset: true }),
+  }),
+]);
+export type QueueItem = z.infer<typeof queueItem>;
+
+export const syncRequest = z.object({ items: z.array(queueItem).max(200) });
+
+/** done: ids que el teléfono puede borrar (aceptados o rechazados para siempre). */
+export type SyncResponse = { done: string[]; rejected: { id: string; reason: string }[] };
