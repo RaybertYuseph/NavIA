@@ -1,7 +1,7 @@
 -- Datos de prueba: USM, 1 operador, 1 unidad, 1 ruta con 5 paradas, 1 conductor,
 -- 1 estudiante y 2 salidas para hoy. Coordenadas aproximadas, solo para probar.
--- Se aplica con `npx supabase db reset` (local). Los usuarios entran con OTP de prueba
--- (ver [auth.sms.test_otp] en config.toml): código 123456.
+-- Se aplica con `npx supabase db reset` (local). Para entrar, escribe el correo en /login y
+-- busca el código en el buzón local de Supabase (Inbucket/Mailpit: http://localhost:54324).
 
 insert into universities (id, name, short_name) values
   ('00000000-0000-0000-0000-000000000001', 'Universidad Santa María', 'USM');
@@ -24,12 +24,12 @@ insert into stops (route_id, seq, name, lat, lng) values
   ('00000000-0000-0000-0000-000000000030', 5, 'USM La Florencia',          10.4691, -66.7797);
 
 -- Usuarios de prueba (solo local; en producción se registran solos por OTP).
-insert into auth.users (instance_id, id, aud, role, phone, phone_confirmed_at, raw_user_meta_data, created_at, updated_at)
+insert into auth.users (instance_id, id, aud, role, email, email_confirmed_at, raw_user_meta_data, created_at, updated_at)
 values
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000d1', 'authenticated', 'authenticated',
-   '584140000001', now(), '{"full_name": "Conductor de Prueba"}', now(), now()),
+   'conductor@navia.test', now(), '{"full_name": "Conductor de Prueba"}', now(), now()),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000e1', 'authenticated', 'authenticated',
-   '584140000002', now(), '{"full_name": "Estudiante de Prueba"}', now(), now());
+   'estudiante@navia.test', now(), '{"full_name": "Estudiante de Prueba"}', now(), now());
 
 -- El trigger handle_new_user ya creó los perfiles; aquí se asignan rol y operador.
 update profiles set role = 'driver', status = 'verified', operator_id = '00000000-0000-0000-0000-000000000010'

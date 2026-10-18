@@ -2,35 +2,42 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { normalizeVePhone } from '@/lib/phone';
+import { OTP_MAX, OTP_MIN, normalizeEmail } from '@/lib/email';
 
-/** Entrar con el teléfono y un código por SMS, sin contraseñas (E1-H1). */
+/** Entrar con el correo y un código de un solo uso, sin contraseñas (E1-H1). */
 export default function LoginPage() {
   const router = useRouter();
-  const [phone, setPhone] = useState('');
-  const [normalized, setNormalized] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function requestCode(e: React.FormEvent) {
     e.preventDefault();
-    const p = normalizeVePhone(phone);
-    if (!p) return setError('Escribe un celular venezolano, por ejemplo 0414-1234567.');
+    const normalized = normalizeEmail(email);
+    if (!normalized) return setError('Escribe un correo válido, por ejemplo ana@gmail.com.');
     setBusy(true);
     setError(null);
-    const { error } = await createClient().auth.signInWithOtp({ phone: p });
+    const { error } = await createClient().auth.signInWithOtp({ email: normalized });
     setBusy(false);
-    if (error) return setError('No pudimos enviar el código. Revisa tu señal e intenta de nuevo.');
-    setNormalized(p);
+    if (error) {
+      return setError(
+        error.status === 429
+          ? 'Pediste muchos códigos seguidos. Espera un minuto e intenta de nuevo.'
+          : 'No pudimos enviar el código. Revisa tu señal e intenta de nuevo.',
+      );
+    }
+    setSentTo(normalized);
+    setCode('');
   }
 
   async function verify(e: React.FormEvent) {
     e.preventDefault();
-    if (!normalized) return;
+    if (!sentTo) return;
     setBusy(true);
     setError(null);
-    const { error } = await createClient().auth.verifyOtp({ phone: normalized, token: code.trim(), type: 'sms' });
+    const { error } = await createClient().auth.verifyOtp({ email: sentTo, token: code, type: 'email' });
     setBusy(false);
     if (error) return setError('Código incorrecto o vencido.');
     router.replace('/');
@@ -42,21 +49,22 @@ export default function LoginPage() {
       <div>
         <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">NavIA</p>
         <h1 className="text-3xl font-bold">Tu copiloto de ruta</h1>
-        <p className="mt-1 text-slate-600">Entra con tu número de teléfono.</p>
+        <p className="mt-1 text-slate-600">Entra con tu correo. Te enviamos un código, sin contraseñas.</p>
       </div>
 
-      {!normalized ? (
+      {!sentTo ? (
         <form onSubmit={requestCode} className="flex flex-col gap-3">
-          <label className="text-sm font-medium" htmlFor="phone">Celular</label>
+          <label className="text-sm font-medium" htmlFor="email">Correo</label>
           <input
-            id="phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="0414-1234567"
+            id="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            placeholder="tucorreo@gmail.com"
             className="rounded-xl border border-slate-300 bg-white p-4 text-lg"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
           <button disabled={busy} className="rounded-xl bg-indigo-600 p-4 text-lg font-semibold text-white disabled:opacity-50">
             {busy ? 'Enviando…' : 'Recibir código'}
@@ -64,21 +72,24 @@ export default function LoginPage() {
         </form>
       ) : (
         <form onSubmit={verify} className="flex flex-col gap-3">
-          <label className="text-sm font-medium" htmlFor="code">Código que te llegó por SMS</label>
+          <label className="text-sm font-medium" htmlFor="code">
+            Código que enviamos a <span className="font-semibold">{sentTo}</span>
+          </label>
           <input
             id="code"
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={6}
+            maxLength={OTP_MAX}
             className="rounded-xl border border-slate-300 bg-white p-4 text-center text-2xl tracking-[0.5em]"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           />
-          <button disabled={busy || code.length < 6} className="rounded-xl bg-indigo-600 p-4 text-lg font-semibold text-white disabled:opacity-50">
+          <button disabled={busy || code.length < OTP_MIN} className="rounded-xl bg-indigo-600 p-4 text-lg font-semibold text-white disabled:opacity-50">
             {busy ? 'Verificando…' : 'Entrar'}
           </button>
-          <button type="button" className="text-sm text-slate-600" onClick={() => setNormalized(null)}>
-            Cambiar número
+          <p className="text-sm text-slate-500">Si no lo ves en unos minutos, revisa la carpeta de spam.</p>
+          <button type="button" className="text-sm text-slate-600" onClick={() => setSentTo(null)}>
+            Cambiar correo
           </button>
         </form>
       )}

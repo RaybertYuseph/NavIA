@@ -1,9 +1,9 @@
 -- Datos para probar en el proyecto Supabase real (no el local).
 -- Pegar en Supabase → SQL Editor DESPUÉS de que estén aplicadas las migraciones
 -- y DESPUÉS de que el conductor y el estudiante hayan entrado una vez a la app
--- con su celular (así ya existe su perfil).
+-- con su correo (así ya existe su perfil).
 --
--- Cambia los dos teléfonos del bloque do $$ de abajo (formato 58 + número sin el 0: 0414-1234567 → 584141234567).
+-- Cambia los dos correos del bloque do $$ de abajo.
 -- Se puede correr varias veces: crea las salidas de HOY sin duplicar.
 
 insert into universities (id, name, short_name) values
@@ -33,17 +33,17 @@ on conflict do nothing;
 
 do $$
 declare
-  conductor  text := '584140000001';  -- ← cambia este
-  estudiante text := '584140000002';  -- ← y este
+  conductor  text := lower('conductor@ejemplo.com');   -- ← cambia este
+  estudiante text := lower('estudiante@ejemplo.com');  -- ← y este
   driver_id  uuid;
 begin
   update profiles set role = 'driver', status = 'verified', operator_id = '00000000-0000-0000-0000-000000000010'
-    where phone = conductor returning id into driver_id;
+    where id = (select id from auth.users where lower(email) = conductor) returning id into driver_id;
   if driver_id is null then
-    raise exception 'No hay perfil con el teléfono %: el conductor debe entrar una vez a la app primero', conductor;
+    raise exception 'No hay perfil con el correo %: el conductor debe entrar una vez a la app primero', conductor;
   end if;
   update profiles set status = 'verified', university_id = '00000000-0000-0000-0000-000000000001'
-    where phone = estudiante;
+    where id = (select id from auth.users where lower(email) = estudiante);
 
   insert into trips (route_id, vehicle_id, driver_id, scheduled_at)
   select '00000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000020', driver_id,
@@ -52,4 +52,6 @@ begin
   on conflict (route_id, scheduled_at) do nothing;
 end $$;
 
-select full_name, phone, role, status from profiles order by created_at desc limit 5;
+select u.email, p.full_name, p.role, p.status
+from profiles p join auth.users u on u.id = p.id
+order by p.created_at desc limit 5;

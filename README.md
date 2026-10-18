@@ -11,7 +11,7 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind 4, Supabase (Postgres, Au
 
 | Zona | Ruta | Qué hace |
 | --- | --- | --- |
-| Todos | `/login` | Entrar con el celular y un código por SMS, sin contraseña (E1-H1) |
+| Todos | `/login` | Entrar con el correo y un código de un solo uso, sin contraseña (E1-H1) |
 | Estudiante | `/` | Salidas de hoy con estado en vivo, última parada y "ubicación hace X min" (E5-H1) |
 | Conductor | `/conductor` | 3 botones: *En camino*, *Llegué a: (próxima parada)*, *Fin de ruta*; GPS cada 20 s con pantalla encendida (E3-H1, E3-H2) |
 | Coordinador | `/panel` | Por ahora, las salidas en vivo |
@@ -31,21 +31,22 @@ cp .env.example .env.local    # pega la URL y la anon key que imprime el comando
 npm run dev                   # http://localhost:3000
 ```
 
-Usuarios de prueba (código OTP `123456`, sin SMS real):
-
-| Rol | Celular |
-| --- | --- |
-| Conductor | 0414-0000001 |
-| Estudiante | 0414-0000002 |
+Usuarios de prueba: `conductor@navia.test` y `estudiante@navia.test`. Escribe el correo en `/login` y busca el código en el buzón local de Supabase: http://localhost:54324.
 
 Abre la app en dos ventanas (una como conductor, otra como estudiante) y toca los botones: el estado cambia en vivo.
 
-Para usar un proyecto Supabase en la nube: aplica `supabase/migrations/*.sql` en orden desde el SQL Editor (o `npx supabase db push`), activa el proveedor *Phone* en Authentication y pon las claves en `.env.local`.
+### Proyecto Supabase en la nube
+
+1. **Tablas:** SQL Editor → pega y corre `supabase/migrations/*.sql` en orden (o `npx supabase db push`).
+2. **Correo con código:** Authentication → Emails → en las plantillas *Magic Link* y *Confirm signup* pega el contenido de `supabase/templates/codigo.html` (debe incluir `{{ .Token }}`; la plantilla por defecto manda un enlace, no un código).
+3. **Envío de correos:** el servicio de correo incluido en Supabase es solo para pruebas (pocos correos por hora). Para el piloto con gente real configura un SMTP propio en Authentication → Emails → SMTP Settings.
+4. **Datos del piloto:** cuando el conductor y un estudiante hayan entrado una vez, corre `supabase/datos_piloto.sql` en el SQL Editor con sus correos.
+5. Pon la URL y la anon key en `.env.local`.
 
 ## Pruebas
 
 ```bash
-npm run lint && npm run typecheck && npm test   # unitarias (teléfono, horas, botones, cola offline)
+npm run lint && npm run typecheck && npm test   # unitarias (correo, horas, botones, cola offline)
 npm run db:test                                 # migraciones + seed + reglas de seguridad en un Postgres temporal
 ```
 
@@ -57,6 +58,9 @@ npm run db:test                                 # migraciones + seed + reglas de
 supabase/
   migrations/0001_init.sql     esquema de la Fase 2
   migrations/0002_corte1.sql   correcciones de seguridad (ver comentarios) y perfil automático
+  migrations/0003_login_correo.sql  login por correo: el perfil toma el nombre del correo
+  templates/codigo.html        correo con el código de entrada
+  datos_piloto.sql             ruta, paradas y salidas de hoy para el proyecto en la nube
   seed.sql                     USM, 1 operador, 1 ruta con 5 paradas, 2 salidas hoy
   tests/                       pruebas de RLS sin Docker
 src/

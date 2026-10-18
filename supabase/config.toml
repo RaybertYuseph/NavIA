@@ -16,23 +16,25 @@ port = 54323
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://localhost:3000"]
 
-[auth.sms]
+# Login con código de un solo uso al correo (signInWithOtp + verifyOtp type 'email').
+[auth.email]
 enable_signup = true
-enable_confirmations = true
+enable_confirmations = false
+otp_length = 6
+otp_expiry = 600
 
-# Teléfonos de prueba del seed: entran con el código 123456 sin enviar SMS.
-[auth.sms.test_otp]
-584140000001 = "123456"
-584140000002 = "123456"
+# La plantilla por defecto manda un enlace; la nuestra manda el código ({{ .Token }}).
+[auth.email.template.magic_link]
+subject = "Tu código de NavIA"
+content_path = "./supabase/templates/codigo.html"
+
+[auth.email.template.confirmation]
+subject = "Tu código de NavIA"
+content_path = "./supabase/templates/codigo.html"
+
+[inbucket]
+enabled = true
+port = 54324
 
 [realtime]
 enabled = true
-
-# Supabase local exige un proveedor de SMS para habilitar el login por teléfono.
-# Con los números de test_otp no se envía nada; en producción se usa Twilio
-# (o WhatsApp vía Twilio) con credenciales reales en el dashboard.
-[auth.sms.twilio]
-enabled = true
-account_sid = "local"
-message_service_sid = "local"
-auth_token = "local"
