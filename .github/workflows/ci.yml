@@ -27,7 +27,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Migraciones, seed y pruebas de RLS en Postgres
+        # El runner trae Postgres instalado (servicio apagado). Se corre como el usuario
+        # runner, que no es root, así initdb funciona sin sudo.
         run: |
-          PGBIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
-          sudo chmod -R a+rX "$GITHUB_WORKSPACE"
-          sudo -u postgres env PGBIN="$PGBIN" bash -c "cd '$GITHUB_WORKSPACE' && bash supabase/tests/run_local.sh"
+          if ! ls -d /usr/lib/postgresql/*/bin >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq postgresql
+          fi
+          PGBIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1) npm run db:test
