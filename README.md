@@ -11,7 +11,7 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind 4, Supabase (Postgres, Au
 
 | Zona | Ruta | Qué hace |
 | --- | --- | --- |
-| Todos | `/login` | Entrar con el correo y un código de un solo uso, sin contraseña (E1-H1) |
+| Todos | `/login` | Entrar o crear cuenta con correo y contraseña, sin verificar el correo (E1-H1). El código por correo está listo pero apagado (`NEXT_PUBLIC_LOGIN_MODE=otp`) |
 | Estudiante | `/` | Salidas de hoy con estado en vivo, última parada y "ubicación hace X min" (E5-H1) |
 | Conductor | `/conductor` | 3 botones: *En camino*, *Llegué a: (próxima parada)*, *Fin de ruta*; GPS cada 20 s con pantalla encendida (E3-H1, E3-H2) |
 | Coordinador | `/panel` | Por ahora, las salidas en vivo |
@@ -31,15 +31,15 @@ cp .env.example .env.local    # pega la URL y la anon key que imprime el comando
 npm run dev                   # http://localhost:3000
 ```
 
-Usuarios de prueba: `conductor@navia.test` y `estudiante@navia.test`. Escribe el correo en `/login` y busca el código en el buzón local de Supabase: http://localhost:54324.
+Usuarios de prueba: crea en `/login` las cuentas `conductor@navia.test` y `estudiante@navia.test` (o usa el seed y, con `NEXT_PUBLIC_LOGIN_MODE=otp`, busca el código en el buzón local: http://localhost:54324).
 
 Abre la app en dos ventanas (una como conductor, otra como estudiante) y toca los botones: el estado cambia en vivo.
 
 ### Proyecto Supabase en la nube
 
 1. **Tablas:** SQL Editor → pega y corre `supabase/migrations/*.sql` en orden (o `npx supabase db push`).
-2. **Correo con código:** Authentication → Emails → en las plantillas *Magic Link* y *Confirm signup* pega el contenido de `supabase/templates/codigo.html` (debe incluir `{{ .Token }}`; la plantilla por defecto manda un enlace, no un código).
-3. **Envío de correos:** el servicio de correo incluido en Supabase es solo para pruebas (pocos correos por hora). Para el piloto con gente real configura un SMTP propio en Authentication → Emails → SMTP Settings.
+2. **Crear cuenta sin verificar el correo:** Authentication → Sign In / Providers → Email → apaga *Confirm email*.
+3. **(Más adelante) código por correo:** configura un SMTP propio (Authentication → Emails → SMTP Settings), pega `supabase/templates/codigo.html` en las plantillas *Magic Link* y *Confirm signup* y pon `NEXT_PUBLIC_LOGIN_MODE=otp`.
 4. **Datos del piloto:** cuando el conductor y un estudiante hayan entrado una vez, corre `supabase/datos_piloto.sql` en el SQL Editor con sus correos.
 5. Pon la URL y la anon key en `.env.local`.
 
