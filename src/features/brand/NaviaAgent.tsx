@@ -1,16 +1,16 @@
 /**
- * Norbit, la mascota de NavIA: una bolita azul claro con cara, bracitos y piernitas, y una
+ * NavIA, el agente y copiloto: una bolita azul claro con cara, bracitos y piernitas, y una
  * antena que "escucha" la ruta. Diseño propio. `animated` la hace flotar, parpadear y saludar.
  */
-export function Norbit({ size = 96, animated = false, className = '' }: { size?: number; animated?: boolean; className?: string }) {
+export function NaviaAgent({ size = 96, animated = false, className = '' }: { size?: number; animated?: boolean; className?: string }) {
   return (
     <svg
       viewBox="0 0 128 128"
       width={size}
       height={size}
       role="img"
-      aria-label="Norbit, el copiloto de NavIA"
-      className={`${animated ? 'norbit-float' : ''} ${className}`}
+      aria-label="NavIA, tu copiloto de ruta"
+      className={`${animated ? 'agent-float' : ''} ${className}`}
     >
       <defs>
         <radialGradient id="nb-body" cx="40%" cy="32%" r="75%">
@@ -39,14 +39,14 @@ export function Norbit({ size = 96, animated = false, className = '' }: { size?:
 
       {/* Bracitos: el derecho saluda */}
       <rect x="15" y="62" width="22" height="10" rx="5" fill="url(#nb-limb)" transform="rotate(25 26 67)" />
-      <g className={animated ? 'norbit-wave' : ''} style={{ transformOrigin: '96px 60px' }}>
+      <g className={animated ? 'agent-wave' : ''} style={{ transformOrigin: '96px 60px' }}>
         <rect x="92" y="40" width="10" height="24" rx="5" fill="url(#nb-limb)" transform="rotate(30 97 60)" />
         <circle cx="105" cy="40" r="6" fill="#38bdf8" />
       </g>
 
       {/* Antena */}
       <path d="M64 24 Q64 14 70 8" stroke="#0284c7" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <circle cx="71" cy="7" r="9" fill="url(#nb-glow)" className={animated ? 'norbit-pulse' : ''} />
+      <circle cx="71" cy="7" r="9" fill="url(#nb-glow)" className={animated ? 'agent-pulse' : ''} />
       <circle cx="71" cy="7" r="3.5" fill="#cffafe" />
 
       {/* Cuerpo */}
@@ -54,7 +54,7 @@ export function Norbit({ size = 96, animated = false, className = '' }: { size?:
       <ellipse cx="48" cy="40" rx="12" ry="7" fill="#fff" opacity="0.55" transform="rotate(-25 48 40)" />
 
       {/* Cara */}
-      <g className={animated ? 'norbit-blink' : ''} style={{ transformOrigin: '64px 60px' }}>
+      <g className={animated ? 'agent-blink' : ''} style={{ transformOrigin: '64px 60px' }}>
         <ellipse cx="51" cy="60" rx="8" ry="10" fill="#fff" />
         <ellipse cx="77" cy="60" rx="8" ry="10" fill="#fff" />
         <circle cx="53" cy="62" r="5" fill="#0b1b3a" />
@@ -69,11 +69,11 @@ export function Norbit({ size = 96, animated = false, className = '' }: { size?:
   );
 }
 
-/** Logotipo: Norbit + "NavIA" con el degradado de la marca. */
+/** Logotipo: el agente NavIA + la palabra "NavIA" con el degradado de la marca. */
 export function NaviaLogo({ size = 32 }: { size?: number }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <Norbit size={size} />
+      <NaviaAgent size={size} />
       <span className="brand-text text-xl font-extrabold tracking-tight">NavIA</span>
     </span>
   );

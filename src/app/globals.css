@@ -48,29 +48,29 @@ body {
   box-shadow: 0 12px 32px -12px rgb(14 165 233 / 0.6);
 }
 
-@keyframes norbit-float {
+@keyframes agent-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
-@keyframes norbit-blink {
+@keyframes agent-blink {
   0%, 92%, 100% { transform: scaleY(1); }
   95% { transform: scaleY(0.1); }
 }
-@keyframes norbit-wave {
+@keyframes agent-wave {
   0%, 60%, 100% { transform: rotate(0); }
   70% { transform: rotate(-14deg); }
   80% { transform: rotate(10deg); }
   90% { transform: rotate(-8deg); }
 }
-@keyframes norbit-pulse {
+@keyframes agent-pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
-.norbit-float { animation: norbit-float 3.2s ease-in-out infinite; }
-.norbit-blink { animation: norbit-blink 4.5s infinite; }
-.norbit-wave { animation: norbit-wave 3.5s ease-in-out infinite; }
-.norbit-pulse { animation: norbit-pulse 1.6s ease-in-out infinite; }
+.agent-float { animation: agent-float 3.2s ease-in-out infinite; }
+.agent-blink { animation: agent-blink 4.5s infinite; }
+.agent-wave { animation: agent-wave 3.5s ease-in-out infinite; }
+.agent-pulse { animation: agent-pulse 1.6s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .norbit-float, .norbit-blink, .norbit-wave, .norbit-pulse { animation: none; }
+  .agent-float, .agent-blink, .agent-wave, .agent-pulse { animation: none; }
 }

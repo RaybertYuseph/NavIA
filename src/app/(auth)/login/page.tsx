@@ -1,5 +1,5 @@
 import { DemoLogin } from '@/features/auth/DemoLogin';
-import { Norbit } from '@/features/brand/Norbit';
+import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { OtpLogin } from '@/features/auth/OtpLogin';
 import { PasswordLogin } from '@/features/auth/PasswordLogin';
 
@@ -11,7 +11,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
       <div className="flex flex-col items-center text-center">
-        <Norbit size={132} animated />
+        <NaviaAgent size={132} animated />
         <h1 className="brand-text mt-2 text-5xl font-extrabold tracking-tight">NavIA</h1>
         <p className="mt-1 text-lg font-semibold">Tu copiloto de ruta</p>
         <p className="mt-1 text-sm text-slate-600">

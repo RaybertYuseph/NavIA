@@ -1,4 +1,4 @@
-import { NaviaLogo } from '@/features/brand/Norbit';
+import { NaviaLogo } from '@/features/brand/NaviaAgent';
 
 export function AppHeader({ name, subtitle }: { name: string; subtitle: string }) {
   return (

@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { OfflineBanner } from '@/components/OfflineBanner';
-import { Norbit } from '@/features/brand/Norbit';
+import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { BusMap } from '@/features/map/BusMap';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { formatHour, timeAgo } from '@/lib/time';
@@ -26,9 +26,9 @@ export function StudentHome({ initial }: { initial: Trip[] }) {
       <OfflineBanner online={online} />
 
       <div className="flex items-end gap-2">
-        <Norbit size={52} animated />
+        <NaviaAgent size={52} animated />
         <p className="card relative mb-2 rounded-2xl rounded-bl-sm px-3 py-2 text-sm">
-          {norbitSays(live.length, next, now)}
+          {agentSays(live.length, next, now)}
         </p>
       </div>
 
@@ -148,8 +148,8 @@ function RoutesSchedule({ trips }: { trips: Trip[] }) {
   );
 }
 
-/** Lo que Norbit, el copiloto, le dice al estudiante al abrir la app. */
-function norbitSays(live: number, next: Trip | null, now: number) {
+/** Lo que NavIA, el copiloto, le dice al estudiante al abrir la app. */
+function agentSays(live: number, next: Trip | null, now: number) {
   if (live > 0) return `¡Hola! Tengo ${live === 1 ? '1 unidad' : `${live} unidades`} en camino. Marca tu parada y mira cuándo llega.`;
   if (next) return `¡Hola! Tu próxima salida es a las ${formatHour(next.scheduled_at)}. ${minutesUntil(next.scheduled_at, now)}.`;
   return '¡Hola! Por hoy no quedan salidas. Te espero mañana.';
