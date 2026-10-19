@@ -5,11 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchTodayTrips } from './query';
 import type { Trip, Vehicle } from './types';
 
-const POLL_MS = 30_000;
+const POLL_MS = 10_000;
 
 /**
  * Salidas de hoy en vivo (E5-H1): Supabase Realtime empuja cada cambio de trips y vehicles
- * y, si el WebSocket cae con la red, se vuelve a consultar cada 30 s.
+ * y, si el WebSocket cae con la red, se vuelve a consultar cada 10 s (también cubre un evento de Realtime perdido).
  */
 export function useLiveTrips(initial: Trip[]) {
   const [trips, setTrips] = useState(initial);

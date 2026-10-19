@@ -83,7 +83,7 @@ supabase/
 src/
   app/                         rutas por rol: (auth) (student) (driver) (coordinator), api/sync
   features/driver/             botones, GPS, wake lock
-  features/trips/              vista del estudiante y estado en vivo (Realtime + respaldo cada 30 s)
+  features/trips/              vista del estudiante y estado en vivo (Realtime + respaldo cada 10 s)
   features/panel/              vista del fiscal
   features/map/                mapa Leaflet + OpenStreetMap
   features/vehicles/           foto de la unidad
