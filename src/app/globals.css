@@ -56,11 +56,9 @@ body {
   0%, 92%, 100% { transform: scaleY(1); }
   95% { transform: scaleY(0.1); }
 }
-@keyframes agent-wave {
-  0%, 60%, 100% { transform: rotate(0); }
-  70% { transform: rotate(-14deg); }
-  80% { transform: rotate(10deg); }
-  90% { transform: rotate(-8deg); }
+@keyframes agent-orbit {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(2px, -7px); }
 }
 @keyframes agent-pulse {
   0%, 100% { opacity: 0.6; }
@@ -68,9 +66,10 @@ body {
 }
 .agent-float { animation: agent-float 3.2s ease-in-out infinite; }
 .agent-blink { animation: agent-blink 4.5s infinite; }
-.agent-wave { animation: agent-wave 3.5s ease-in-out infinite; }
+.agent-orbit { animation: agent-orbit 4s ease-in-out infinite; }
+.agent-orbit-late { animation-delay: -2s; }
 .agent-pulse { animation: agent-pulse 1.6s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .agent-float, .agent-blink, .agent-wave, .agent-pulse { animation: none; }
+  .agent-float, .agent-blink, .agent-orbit, .agent-pulse { animation: none; }
 }

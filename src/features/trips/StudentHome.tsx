@@ -26,7 +26,7 @@ export function StudentHome({ initial }: { initial: Trip[] }) {
       <OfflineBanner online={online} />
 
       <div className="flex items-end gap-2">
-        <NaviaAgent size={52} animated />
+        <NaviaAgent size={52} animated compact />
         <p className="card relative mb-2 rounded-2xl rounded-bl-sm px-3 py-2 text-sm">
           {agentSays(live.length, next, now)}
         </p>
