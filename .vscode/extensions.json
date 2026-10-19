@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "supabase.vscode-supabase-extension",
+    "usernamehw.errorlens",
+    "ms-playwright.playwright"
+  ]
+}
