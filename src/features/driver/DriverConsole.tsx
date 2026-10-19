@@ -8,6 +8,7 @@ import { formatHour } from '@/lib/time';
 import { STATUS_LABEL, STATUS_STYLE, sortedStops, type Trip } from '@/features/trips/types';
 import { allowedActions, applyEvent, nextStop, type DriverState } from './state';
 import { useGps, type GpsState } from './useGps';
+import { useWaiting } from './useWaiting';
 import { useWakeLock } from './useWakeLock';
 
 const GPS_LABEL: Record<GpsState, string> = {
@@ -92,6 +93,9 @@ function TripControls({ trip }: { trip: Trip }) {
   const upcoming = nextStop(stops, state.currentStopId);
   const current = stops.find((s) => s.id === state.currentStopId);
   const currentIdx = stops.findIndex((s) => s.id === state.currentStopId);
+  const waiting = useWaiting(trip.id, trip.waiting, state.status !== 'finalizada' && state.status !== 'cancelada');
+  const waitingAt = (stopId: string | undefined) => (stopId ? (waiting[stopId] ?? 0) : 0);
+  const totalWaiting = stops.slice(currentIdx + 1).reduce((a, s) => a + waitingAt(s.id), 0);
 
   async function send(type: TripEventType, stopId: string | null = null) {
     const next = applyEvent(state, type, stopId);
@@ -106,7 +110,7 @@ function TripControls({ trip }: { trip: Trip }) {
     <>
       {trip.vehicles && <AvailabilityToggle vehicle={trip.vehicles} />}
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
+      <section className="card rounded-2xl p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">{trip.routes?.name}</h2>
           <span className={`rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLE[state.status]}`}>
@@ -121,6 +125,11 @@ function TripControls({ trip }: { trip: Trip }) {
           {GPS_LABEL[gps]}
           {pending > 0 ? ` · ${pending} por enviar (se envían al tener señal)` : ' · Todo enviado'}
         </p>
+        {totalWaiting > 0 && (
+          <p className="mt-2 rounded-xl bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-800">
+            🧍 {totalWaiting} {totalWaiting === 1 ? 'estudiante espera' : 'estudiantes esperan'} en las próximas paradas
+          </p>
+        )}
         <ol className="mt-3 flex flex-col gap-1 border-t border-slate-100 pt-3">
           {stops.map((s, i) => {
             const done = state.status === 'finalizada' || (currentIdx >= 0 && (i < currentIdx || (i === currentIdx && state.status !== 'en_parada')));
@@ -135,6 +144,11 @@ function TripControls({ trip }: { trip: Trip }) {
                   {done ? '✓' : i + 1}
                 </span>
                 <span className={done ? 'text-slate-500' : here ? 'font-semibold' : ''}>{s.name}</span>
+                {!done && !here && waitingAt(s.id) > 0 && (
+                  <span className="ml-auto rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">
+                    {waitingAt(s.id)} esperando
+                  </span>
+                )}
               </li>
             );
           })}
@@ -150,9 +164,12 @@ function TripControls({ trip }: { trip: Trip }) {
         onClick={() => upcoming && send('en_parada', upcoming.id)}
       >
         {upcoming ? `Llegué a: ${upcoming.name}` : 'Sin más paradas'}
+        {upcoming && waitingAt(upcoming.id) > 0 && (
+          <span className="mt-1 block text-base font-semibold">🧍 {waitingAt(upcoming.id)} esperando</span>
+        )}
       </BigButton>
       <BigButton
-        color="bg-slate-800"
+        color="bg-ink"
         disabled={!actions.finDeRuta}
         onClick={() => {
           if (confirm('¿Terminar la ruta?')) void send('fin_de_ruta');

@@ -102,7 +102,7 @@ export function PasswordLogin() {
           onChange={(e) => setPassword(e.target.value)}
         />
         {mode === 'crear' && <p className="text-sm text-slate-500">Mínimo {PASSWORD_MIN} caracteres.</p>}
-        <button disabled={busy} className="rounded-xl bg-indigo-600 p-4 text-lg font-semibold text-white disabled:opacity-50">
+        <button disabled={busy} className="rounded-xl bg-linear-to-r from-brand-500 to-indigo-500 p-4 shadow-lg shadow-brand-500/30 text-lg font-semibold text-white disabled:opacity-50">
           {busy ? 'Un momento…' : mode === 'entrar' ? 'Entrar' : 'Crear cuenta'}
         </button>
       </form>

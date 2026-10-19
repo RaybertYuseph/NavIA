@@ -5,7 +5,7 @@ export function VehiclePhoto({ vehicle, size = 'md' }: { vehicle: Vehicle | null
   const box = { sm: 'h-12 w-16', md: 'h-20 w-28', lg: 'h-40 w-full' }[size];
   return (
     <figure className="flex shrink-0 flex-col items-center gap-1">
-      <div className={`${box} overflow-hidden rounded-xl bg-indigo-50`}>
+      <div className={`${box} overflow-hidden rounded-xl bg-brand-50`}>
         {vehicle?.photo_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- foto pública de Storage, sin optimizador
           <img src={vehicle.photo_url} alt={`Unidad ${vehicle.plate}`} className="h-full w-full object-cover" loading="lazy" />
@@ -24,7 +24,7 @@ export function VehiclePhoto({ vehicle, size = 'md' }: { vehicle: Vehicle | null
 
 function BusDrawing() {
   return (
-    <svg viewBox="0 0 64 40" className="h-full w-full p-2 text-indigo-400" aria-hidden="true">
+    <svg viewBox="0 0 64 40" className="h-full w-full p-2 text-brand-400" aria-hidden="true">
       <rect x="4" y="6" width="56" height="24" rx="5" fill="currentColor" />
       <rect x="9" y="10" width="10" height="8" rx="1.5" fill="white" />
       <rect x="22" y="10" width="10" height="8" rx="1.5" fill="white" />

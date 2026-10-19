@@ -1,4 +1,5 @@
 import { DemoLogin } from '@/features/auth/DemoLogin';
+import { Norbit } from '@/features/brand/Norbit';
 import { OtpLogin } from '@/features/auth/OtpLogin';
 import { PasswordLogin } from '@/features/auth/PasswordLogin';
 
@@ -9,16 +10,17 @@ const LOGIN_MODE = process.env.NEXT_PUBLIC_LOGIN_MODE === 'otp' ? 'otp' : 'passw
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">NavIA</p>
-        <h1 className="text-3xl font-bold">Tu copiloto de ruta</h1>
-        <p className="mt-1 text-slate-600">
+      <div className="flex flex-col items-center text-center">
+        <Norbit size={132} animated />
+        <h1 className="brand-text mt-2 text-5xl font-extrabold tracking-tight">NavIA</h1>
+        <p className="mt-1 text-lg font-semibold">Tu copiloto de ruta</p>
+        <p className="mt-1 text-sm text-slate-600">
           {LOGIN_MODE === 'otp' ? 'Entra con tu correo. Te enviamos un código, sin contraseñas.' : 'Entra o crea tu cuenta con tu correo.'}
         </p>
       </div>
       {DEMO && <DemoLogin />}
       {DEMO ? (
-        <details className="rounded-2xl bg-white p-4">
+        <details className="card rounded-2xl p-4">
           <summary className="cursor-pointer text-sm font-medium text-slate-700">Entrar con mi cuenta</summary>
           <div className="mt-4 flex flex-col gap-4">{LOGIN_MODE === 'otp' ? <OtpLogin /> : <PasswordLogin />}</div>
         </details>

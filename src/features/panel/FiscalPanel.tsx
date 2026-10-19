@@ -5,7 +5,7 @@ import { OfflineBanner } from '@/components/OfflineBanner';
 import { BusMap } from '@/features/map/BusMap';
 import { groupByRoute } from '@/features/trips/derive';
 import { useLiveTrips } from '@/features/trips/useLiveTrips';
-import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, type Trip, type Vehicle } from '@/features/trips/types';
+import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, totalWaiting, type Trip, type Vehicle } from '@/features/trips/types';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { uploadVehiclePhoto } from '@/features/vehicles/uploadPhoto';
 import { createClient } from '@/lib/supabase/client';
@@ -37,22 +37,24 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
   };
   const done = trips.filter((t) => t.status === 'finalizada').length;
   const live = trips.filter((t) => isLive(t) && t.last_lat != null && t.last_lng != null);
+  const waiting = trips.reduce((a, t) => a + totalWaiting(t), 0);
 
   return (
     <div className="flex flex-col gap-5">
       <OfflineBanner online={online} />
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Kpi label="En ruta" value={counts.en_ruta} tone="text-emerald-700" />
         <Kpi label="Disponibles" value={counts.disponible} tone="text-sky-700" />
         <Kpi label="Fuera de servicio" value={counts.fuera} tone="text-slate-600" />
-        <Kpi label="Salidas completadas" value={`${done}/${trips.length}`} tone="text-indigo-700" />
+        <Kpi label="Salidas completadas" value={`${done}/${trips.length}`} tone="text-indigo-600" />
+        <Kpi label="Estudiantes en espera" value={waiting} tone="text-cyan-600" wide />
       </section>
 
       <section aria-labelledby="mapa">
         <h2 id="mapa" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Mapa en vivo</h2>
         {live.length === 0 ? (
-          <p className="rounded-2xl bg-white p-4 text-slate-600">Ninguna unidad está enviando ubicación ahora.</p>
+          <p className="card rounded-2xl p-4 text-slate-600">Ninguna unidad está enviando ubicación ahora.</p>
         ) : (
           <BusMap
             className="h-80"
@@ -71,7 +73,7 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         <h2 id="unidades" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Unidades</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {units.map(({ vehicle, trip, state }) => (
-            <article key={vehicle.id} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm">
+            <article key={vehicle.id} className="flex gap-3 card rounded-2xl p-3">
               <PhotoUploader vehicle={vehicle} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
@@ -87,7 +89,10 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                     <p className="text-sm text-slate-600">
                       {trip.driver_id && props.drivers[trip.driver_id]} · {currentStop(trip)?.name ?? 'Saliendo'}
                     </p>
-                    <p className="text-xs text-slate-500">Ubicación {timeAgo(trip.last_seen_at, now)}</p>
+                    <p className="text-xs text-slate-500">
+                      Ubicación {timeAgo(trip.last_seen_at, now)}
+                      {totalWaiting(trip) > 0 && ` · ${totalWaiting(trip)} esperando`}
+                    </p>
                   </>
                 ) : (
                   <p className="mt-1 text-sm text-slate-600">{nextFor(trips, vehicle.id, now)}</p>
@@ -102,8 +107,15 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         <h2 id="salidas" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Salidas de hoy por ruta</h2>
         <div className="flex flex-col gap-3">
           {groupByRoute(trips).map(({ route, trips: rt }) => (
-            <article key={rt[0].route_id} className="overflow-x-auto rounded-2xl bg-white p-4 shadow-sm">
-              <h3 className="font-semibold">{route.name}</h3>
+            <article key={rt[0].route_id} className="overflow-x-auto card rounded-2xl p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-semibold">{route.name}</h3>
+                {rt.some((t) => totalWaiting(t) > 0) && (
+                  <span className="shrink-0 rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-800">
+                    {rt.reduce((a, t) => a + totalWaiting(t), 0)} en espera
+                  </span>
+                )}
+              </div>
               <table className="mt-2 w-full text-left text-sm">
                 <thead className="text-slate-500">
                   <tr>
@@ -111,7 +123,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                     <th className="py-1 pr-3 font-medium">Unidad</th>
                     <th className="py-1 pr-3 font-medium">Conductor</th>
                     <th className="py-1 pr-3 font-medium">Estado</th>
-                    <th className="py-1 font-medium">Última parada</th>
+                    <th className="py-1 pr-3 font-medium">Última parada</th>
+                    <th className="py-1 font-medium">En espera</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -123,7 +136,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                       <td className="py-1.5 pr-3">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[t.status]}`}>{STATUS_LABEL[t.status]}</span>
                       </td>
-                      <td className="py-1.5">{currentStop(t)?.name ?? '—'}</td>
+                      <td className="py-1.5 pr-3">{currentStop(t)?.name ?? '—'}</td>
+                      <td className="py-1.5">{totalWaiting(t) || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -138,9 +152,9 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
   );
 }
 
-function Kpi({ label, value, tone }: { label: string; value: number | string; tone: string }) {
+function Kpi({ label, value, tone, wide }: { label: string; value: number | string; tone: string; wide?: boolean }) {
   return (
-    <div className="rounded-2xl bg-white p-3 shadow-sm">
+    <div className={`card rounded-2xl p-3 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
       <p className={`text-3xl font-bold ${tone}`}>{value}</p>
       <p className="text-sm text-slate-600">{label}</p>
     </div>
@@ -191,7 +205,7 @@ function PhotoUploader({ vehicle }: { vehicle: Vehicle }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <VehiclePhoto vehicle={{ ...shown, plate: '' }} />
-      <button type="button" disabled={busy} onClick={() => input.current?.click()} className="text-xs font-medium text-indigo-700 disabled:opacity-50">
+      <button type="button" disabled={busy} onClick={() => input.current?.click()} className="text-xs font-medium text-brand-700 disabled:opacity-50">
         {busy ? 'Subiendo…' : photo ? 'Cambiar foto' : 'Subir foto'}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -216,7 +230,7 @@ function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
   return (
     <section className="flex flex-col items-start gap-2 rounded-2xl border border-dashed border-slate-300 p-4">
       <p className="text-sm text-slate-600">Demo: deja las salidas de hoy como al inicio del día para repetir el recorrido.</p>
-      <button type="button" disabled={busy} onClick={reset} className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+      <button type="button" disabled={busy} onClick={reset} className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
         {busy ? 'Reiniciando…' : 'Reiniciar demo'}
       </button>
       {message && <p className="text-sm text-slate-700">{message}</p>}

@@ -28,7 +28,7 @@ export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
   }
 
   return (
-    <section className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
+    <section className="flex items-center gap-3 card rounded-2xl p-3">
       <VehiclePhoto vehicle={vehicle} size="sm" />
       <div className="flex-1">
         <p className="text-sm text-slate-500">Tu unidad</p>

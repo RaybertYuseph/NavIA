@@ -58,7 +58,7 @@ export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBu
     if (stops.length > 1) {
       L.polyline(
         stops.map((s) => [s.lat, s.lng] as [number, number]),
-        { color: '#6366f1', weight: 3, opacity: 0.5, dashArray: '6 6' },
+        { color: '#0284c7', weight: 3, opacity: 0.5, dashArray: '6 6' },
       ).addTo(layer.current);
     }
     for (const b of buses) {
@@ -66,8 +66,8 @@ export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBu
         icon: L.divIcon({
           className: '',
           html: `<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center">
-            <div style="background:${b.stale ? '#94a3b8' : '#4f46e5'};color:#fff;border-radius:9999px;padding:2px 8px;font:600 12px system-ui;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)">🚌 ${escapeHtml(b.label)}</div>
-            <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${b.stale ? '#94a3b8' : '#4f46e5'}"></div>
+            <div style="background:${b.stale ? '#94a3b8' : '#0ea5e9'};color:#fff;border-radius:9999px;padding:2px 8px;font:600 12px system-ui;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)">🚌 ${escapeHtml(b.label)}</div>
+            <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${b.stale ? '#94a3b8' : '#0ea5e9'}"></div>
           </div>`,
         }),
       }).addTo(layer.current);

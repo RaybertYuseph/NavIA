@@ -22,13 +22,15 @@ export type Trip = {
   started_at: string | null;
   driver_id: string | null;
   vehicle_id: string | null;
+  /** Estudiantes esperando por parada: { stop_id: n }. */
+  waiting: Record<string, number>;
   routes: { name: string; direction: 'ida' | 'regreso'; active: boolean; fare_usd: number; stops: Stop[] } | null;
   vehicles: Vehicle | null;
 };
 
 /** Columnas que leen las pantallas (una sola consulta con ruta y paradas). */
 export const TRIP_SELECT =
-  'id, route_id, vehicle_id, driver_id, scheduled_at, started_at, status, current_stop_id, last_lat, last_lng, last_seen_at, ' +
+  'id, route_id, vehicle_id, driver_id, scheduled_at, started_at, status, current_stop_id, last_lat, last_lng, last_seen_at, waiting, ' +
   'routes(name, direction, active, fare_usd, stops(id, seq, name, lat, lng)), ' +
   'vehicles(id, plate, capacity, photo_url, available)';
 
@@ -58,4 +60,8 @@ export function isLive(t: Pick<Trip, 'status'>) {
 
 export function currentStop(trip: Trip) {
   return sortedStops(trip).find((s) => s.id === trip.current_stop_id) ?? null;
+}
+
+export function totalWaiting(trip: Pick<Trip, 'waiting'>) {
+  return Object.values(trip.waiting ?? {}).reduce((a, n) => a + n, 0);
 }

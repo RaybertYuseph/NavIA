@@ -1,11 +1,13 @@
 'use client';
 import { useMemo, useState } from 'react';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { Norbit } from '@/features/brand/Norbit';
 import { BusMap } from '@/features/map/BusMap';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { formatHour, timeAgo } from '@/lib/time';
 import { nextStop } from '@/features/driver/state';
 import { useLiveTrips } from './useLiveTrips';
+import { WaitAtStop } from './WaitAtStop';
 import { groupByRoute, nextDeparture, stopsForMap } from './derive';
 import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, sortedStops, type Trip } from './types';
 
@@ -23,20 +25,32 @@ export function StudentHome({ initial }: { initial: Trip[] }) {
     <div className="flex flex-col gap-5">
       <OfflineBanner online={online} />
 
+      <div className="flex items-end gap-2">
+        <Norbit size={52} animated />
+        <p className="card relative mb-2 rounded-2xl rounded-bl-sm px-3 py-2 text-sm">
+          {norbitSays(live.length, next, now)}
+        </p>
+      </div>
+
       <section aria-labelledby="proxima">
         <h2 id="proxima" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Próxima salida</h2>
         {next ? (
-          <div className="flex items-center gap-4 rounded-2xl bg-indigo-600 p-4 text-white shadow">
+          <div className="flex items-center gap-4 brand-hero rounded-3xl p-4 text-white">
             <div className="flex-1">
               <p className="text-4xl font-bold">{formatHour(next.scheduled_at)}</p>
               <p className="mt-1 font-medium">{next.routes?.name}</p>
-              <p className="text-sm text-indigo-100">{minutesUntil(next.scheduled_at, now)}</p>
+              <p className="text-sm text-sky-50">{minutesUntil(next.scheduled_at, now)}</p>
             </div>
             <VehiclePhoto vehicle={next.vehicles} />
           </div>
         ) : (
-          <p className="rounded-2xl bg-white p-4 text-slate-600">No hay más salidas programadas hoy.</p>
+          <p className="card rounded-2xl p-4 text-slate-600">No hay más salidas programadas hoy.</p>
         )}
+      </section>
+
+      <section aria-labelledby="espera">
+        <h2 id="espera" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Estoy en la parada</h2>
+        <WaitAtStop trips={trips} preferredTripId={selected?.id ?? next?.id ?? null} />
       </section>
 
       <section aria-labelledby="en-camino">
@@ -44,7 +58,7 @@ export function StudentHome({ initial }: { initial: Trip[] }) {
           En camino ahora {live.length > 0 && `(${live.length})`}
         </h2>
         {live.length === 0 ? (
-          <p className="rounded-2xl bg-white p-4 text-slate-600">Ninguna unidad va en camino en este momento.</p>
+          <p className="card rounded-2xl p-4 text-slate-600">Ninguna unidad va en camino en este momento.</p>
         ) : (
           <div className="flex flex-col gap-3">
             <BusMap
@@ -82,7 +96,7 @@ function LiveTripCard({ trip, now, selected, onSelect }: { trip: Trip; now: numb
     <button
       type="button"
       onClick={onSelect}
-      className={`flex gap-3 rounded-2xl bg-white p-3 text-left shadow-sm ${selected ? 'ring-2 ring-indigo-500' : ''}`}
+      className={`flex gap-3 card rounded-2xl p-3 text-left shadow-sm ${selected ? 'ring-2 ring-brand-400' : ''}`}
     >
       <VehiclePhoto vehicle={trip.vehicles} />
       <div className="min-w-0 flex-1">
@@ -105,14 +119,14 @@ function LiveTripCard({ trip, now, selected, onSelect }: { trip: Trip; now: numb
 function RoutesSchedule({ trips }: { trips: Trip[] }) {
   const routes = useMemo(() => groupByRoute(trips), [trips]);
   if (routes.length === 0) {
-    return <p className="rounded-2xl bg-white p-4 text-slate-600">No hay salidas programadas hoy.</p>;
+    return <p className="card rounded-2xl p-4 text-slate-600">No hay salidas programadas hoy.</p>;
   }
   return (
     <div className="flex flex-col gap-3">
       {routes.map(({ route, trips: rt }) => {
         const stops = sortedStops(rt[0]);
         return (
-          <article key={rt[0].route_id} className="rounded-2xl bg-white p-4 shadow-sm">
+          <article key={rt[0].route_id} className="card rounded-2xl p-4">
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold">{route.name}</h3>
               <span className="shrink-0 text-sm text-slate-600">{Number(route.fare_usd).toFixed(2)} USD</span>
@@ -132,6 +146,13 @@ function RoutesSchedule({ trips }: { trips: Trip[] }) {
       })}
     </div>
   );
+}
+
+/** Lo que Norbit, el copiloto, le dice al estudiante al abrir la app. */
+function norbitSays(live: number, next: Trip | null, now: number) {
+  if (live > 0) return `¡Hola! Tengo ${live === 1 ? '1 unidad' : `${live} unidades`} en camino. Marca tu parada y mira cuándo llega.`;
+  if (next) return `¡Hola! Tu próxima salida es a las ${formatHour(next.scheduled_at)}. ${minutesUntil(next.scheduled_at, now)}.`;
+  return '¡Hola! Por hoy no quedan salidas. Te espero mañana.';
 }
 
 function minutesUntil(iso: string, now: number) {

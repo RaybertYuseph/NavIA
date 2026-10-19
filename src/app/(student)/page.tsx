@@ -11,7 +11,7 @@ export default async function StudentPage() {
     <main className="mx-auto max-w-md p-4">
       <AppHeader name={profile.full_name} subtitle="Estudiante" />
       {profile.status === 'pending' && (
-        <p className="mb-3 rounded-xl bg-indigo-50 p-3 text-sm text-indigo-900">
+        <p className="mb-3 rounded-xl bg-brand-50 p-3 text-sm text-brand-700 ring-1 ring-brand-100">
           Tu registro está pendiente de aprobación. Ya puedes ver el estado de las rutas.
         </p>
       )}

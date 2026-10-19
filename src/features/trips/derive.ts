@@ -24,3 +24,11 @@ export function nextDeparture(trips: Trip[], now: number, demo = false) {
   const upcoming = scheduled.find((t) => new Date(t.scheduled_at).getTime() > now - 10 * 60_000);
   return upcoming ?? (demo ? scheduled[0] : undefined) ?? null;
 }
+
+/** Paradas que el estudiante aún puede marcar: las que el bus todavía no alcanza. */
+export function pendingStops(trip: Trip) {
+  const stops = sortedStops(trip);
+  if (trip.status === 'finalizada' || trip.status === 'cancelada') return [];
+  const i = stops.findIndex((s) => s.id === trip.current_stop_id);
+  return i < 0 ? stops : stops.slice(i + 1);
+}

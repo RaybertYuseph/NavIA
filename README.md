@@ -11,9 +11,13 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind 4, Supabase (Postgres, Au
 
 | Quién | Ruta | Qué ve y qué hace |
 | --- | --- | --- |
-| Fiscal de la línea (`coordinator`) | `/panel` | Unidades en ruta, disponibles y fuera de servicio; mapa en vivo; foto, placa, conductor y última parada de cada unidad; salidas de hoy por ruta; sube la foto de cada unidad; *Reiniciar demo* |
-| Conductor (`driver`) | `/conductor` | Marca su unidad *disponible*; *En camino*, *Llegué a: (parada)*, *Parada completada · seguir*, *Fin de ruta*; lista de paradas con ✓; GPS cada 20 s; funciona sin señal |
-| Estudiante (`student`) | `/` | Próxima unidad en salir (hora, foto y placa); unidades en camino en el mapa con su próxima parada; rutas y horarios de hoy |
+| Fiscal de la línea (`coordinator`) | `/panel` | Unidades en ruta, disponibles y fuera de servicio; mapa en vivo; foto, placa, conductor y última parada de cada unidad; estudiantes en espera por ruta; salidas de hoy por ruta; sube la foto de cada unidad; *Reiniciar demo* |
+| Conductor (`driver`) | `/conductor` | Marca su unidad *disponible*; ve cuántos estudiantes esperan en cada parada; *En camino*, *Llegué a: (parada)*, *Parada completada · seguir*, *Fin de ruta*; lista de paradas con ✓; GPS cada 20 s; funciona sin señal |
+| Estudiante (`student`) | `/` | Norbit lo saluda; próxima unidad en salir (hora, foto y placa); *Estoy en la parada* (marca dónde espera y ve cuántos esperan con él); unidades en camino en el mapa con su próxima parada; rutas y horarios de hoy |
+
+**Estoy en la parada:** el conteo por parada vive en `trips.waiting` y llega por Realtime; cuando el conductor toca *Llegué a* esa parada, la espera se cierra sola. Nadie ve quién espera, solo cuántos.
+
+**Marca:** Norbit (`src/features/brand/Norbit.tsx`) es la mascota y el ícono de la app; la paleta azul claro está en `src/app/globals.css` (`brand-*`).
 
 Todos entran por `/login` (correo y contraseña, sin verificar el correo) y caen en su vista según `profiles.role`. El código por correo está listo pero apagado (`NEXT_PUBLIC_LOGIN_MODE=otp`).
 
@@ -70,6 +74,7 @@ supabase/
   migrations/0002_corte1.sql   correcciones de seguridad (ver comentarios) y perfil automático
   migrations/0003_login_correo.sql  login por correo: el perfil toma el nombre del correo
   migrations/0004_tres_vistas.sql   foto y disponibilidad de unidades, reinicio de la demo
+  migrations/0005_espera_en_parada.sql  "Estoy en la parada" y conteo por parada
   demo.sql                     cuentas, unidades y salidas de la demo
   templates/codigo.html        correo con el código de entrada
   datos_piloto.sql             ruta, paradas y salidas de hoy para el proyecto en la nube
