@@ -18,6 +18,9 @@ export function stopsForMap(trip: Trip) {
 }
 
 /** La próxima salida que no ha arrancado y cuya hora no pasó hace más de 10 minutos. */
-export function nextDeparture(trips: Trip[], now: number) {
-  return trips.find((t) => t.status === 'scheduled' && new Date(t.scheduled_at).getTime() > now - 10 * 60_000) ?? null;
+// En la demo, pasada la última salida del día se muestra la primera programada para que el tour no quede vacío.
+export function nextDeparture(trips: Trip[], now: number, demo = false) {
+  const scheduled = trips.filter((t) => t.status === 'scheduled');
+  const upcoming = scheduled.find((t) => new Date(t.scheduled_at).getTime() > now - 10 * 60_000);
+  return upcoming ?? (demo ? scheduled[0] : undefined) ?? null;
 }

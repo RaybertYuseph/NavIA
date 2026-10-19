@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 
-const body = z.object({ vehicle_id: z.string().uuid(), available: z.boolean() });
+const body = z.object({ vehicle_id: z.guid(), available: z.boolean() });
 
 /** El conductor marca su unidad disponible. La regla (solo su unidad de hoy) vive en la BD. */
 export async function POST(req: Request) {

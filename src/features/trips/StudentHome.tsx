@@ -17,7 +17,7 @@ export function StudentHome({ initial }: { initial: Trip[] }) {
   const live = trips.filter(isLive);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = live.find((t) => t.id === selectedId) ?? live[0] ?? null;
-  const next = nextDeparture(trips, now);
+  const next = nextDeparture(trips, now, process.env.NEXT_PUBLIC_DEMO === '1');
 
   return (
     <div className="flex flex-col gap-5">

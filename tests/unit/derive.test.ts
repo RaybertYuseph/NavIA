@@ -26,6 +26,10 @@ describe('nextDeparture', () => {
     expect(nextDeparture(trips, now)?.id).toBe('c');
   });
   it('null si no queda ninguna', () => expect(nextDeparture([trip('a', '06:00', 'scheduled')], now)).toBeNull());
+  it('en la demo, pasada la última, muestra la primera programada', () => {
+    const trips = [trip('a', '06:00', 'finalizada'), trip('b', '06:10', 'scheduled')];
+    expect(nextDeparture(trips, now, true)?.id).toBe('b');
+  });
 });
 
 describe('stopsForMap', () => {
