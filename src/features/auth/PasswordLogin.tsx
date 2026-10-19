@@ -118,5 +118,5 @@ function describeError(error: { status?: number; code?: string; message: string 
   if (error.code === 'weak_password') return 'Esa contraseña es muy débil. Prueba con una más larga.';
   if (error.code === 'email_not_confirmed') return 'Tu cuenta aún no está activada. Avísale al coordinador.';
   if (mode === 'entrar' && error.status === 400) return 'Correo o contraseña incorrectos.';
-  return 'No pudimos conectar. Revisa tu señal e intenta de nuevo.';
+  return `No pudimos conectar. Revisa tu señal e intenta de nuevo. (${error.message})`;
 }

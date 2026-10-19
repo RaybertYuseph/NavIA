@@ -23,12 +23,25 @@ export function DemoLogin() {
   async function enter(email: string) {
     setBusy(email);
     setError(null);
-    const { error } = await createClient().auth.signInWithPassword({
-      email,
-      password: process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? '',
-    });
+    // trim(): un espacio o salto de línea pegado al guardar la variable en Vercel rompe la contraseña.
+    const password = (process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? '').trim();
+    if (!password) {
+      setBusy(null);
+      return setError('Falta NEXT_PUBLIC_DEMO_PASSWORD en esta publicación.');
+    }
+    let message: string | null = null;
+    try {
+      const { error } = await createClient().auth.signInWithPassword({ email, password });
+      if (error) message = `${error.message}${error.status ? ` (${error.status})` : ''}`;
+    } catch (e) {
+      message = e instanceof Error ? e.message : String(e);
+    }
     setBusy(null);
-    if (error) return setError('No se pudo entrar a la demo. Revisa tu conexión.');
+    if (message) {
+      console.error('Entrada de demo', email, message);
+      // El detalle permite saber si es la contraseña, la clave de Supabase o la red.
+      return setError(`No se pudo entrar a la demo: ${message}`);
+    }
     router.replace('/');
     router.refresh();
   }
