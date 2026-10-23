@@ -63,7 +63,7 @@ export function DriverConsole({ trips }: { trips: Trip[] }) {
   }
   return (
     <div className="flex flex-col gap-4">
-      {trip.vehicles && <AvailabilityToggle vehicle={trip.vehicles} />}
+      {trip.vehicles && <AvailabilityToggle key={trip.vehicles.id} vehicle={trip.vehicles} />}
       {trips.length > 1 && (
         <section data-tour="salidas" aria-label="Tus salidas de hoy">
           <h2 className="section-title">Tus salidas de hoy</h2>

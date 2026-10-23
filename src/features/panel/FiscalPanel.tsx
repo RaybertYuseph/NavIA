@@ -13,6 +13,7 @@ import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, totalWaiting, type Tri
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { uploadVehiclePhoto } from '@/features/vehicles/uploadPhoto';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeWithSession } from '@/lib/supabase/realtime';
 import { formatHour, timeAgo } from '@/lib/time';
 
 type UnitState = 'en_ruta' | 'disponible' | 'fuera';
@@ -201,14 +202,14 @@ function useLiveVehicles(initial: Vehicle[]) {
   const [vehicles, setVehicles] = useState(initial);
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel('navia-vehicles')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, (p: RealtimePostgresChangesPayload<Vehicle>) => {
-        const v = p.new as Vehicle;
-        setVehicles((prev) => prev.map((x) => (x.id === v.id ? { ...x, ...v } : x)));
-      })
-      .subscribe();
-    return () => void supabase.removeChannel(channel);
+    return subscribeWithSession(supabase, () =>
+      supabase
+        .channel('navia-vehicles')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, (p: RealtimePostgresChangesPayload<Vehicle>) => {
+          const v = p.new as Vehicle;
+          setVehicles((prev) => prev.map((x) => (x.id === v.id ? { ...x, ...v } : x)));
+        }),
+    );
   }, []);
   return vehicles;
 }

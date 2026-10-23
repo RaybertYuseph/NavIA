@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeWithSession } from '@/lib/supabase/realtime';
 import { fetchTodayTrips } from './query';
 import type { Trip, Vehicle } from './types';
 
@@ -26,19 +27,20 @@ export function useLiveTrips(initial: Trip[]) {
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel('navia-live')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trips' }, (p: RealtimePostgresChangesPayload<Trip>) => {
-        const row = p.new as Partial<Trip> & { id: string };
-        setTrips((prev) =>
-          prev.map((t) => (t.id === row.id ? { ...t, ...row, routes: t.routes, vehicles: t.vehicles } : t)),
-        );
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, (p: RealtimePostgresChangesPayload<Vehicle>) => {
-        const v = p.new as Vehicle;
-        setTrips((prev) => prev.map((t) => (t.vehicle_id === v.id ? { ...t, vehicles: { ...t.vehicles, ...v } } : t)));
-      })
-      .subscribe();
+    const unsubscribe = subscribeWithSession(supabase, () =>
+      supabase
+        .channel('navia-live')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trips' }, (p: RealtimePostgresChangesPayload<Trip>) => {
+          const row = p.new as Partial<Trip> & { id: string };
+          setTrips((prev) =>
+            prev.map((t) => (t.id === row.id ? { ...t, ...row, routes: t.routes, vehicles: t.vehicles } : t)),
+          );
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, (p: RealtimePostgresChangesPayload<Vehicle>) => {
+          const v = p.new as Vehicle;
+          setTrips((prev) => prev.map((t) => (t.vehicle_id === v.id ? { ...t, vehicles: { ...t.vehicles, ...v } } : t)));
+        }),
+    );
 
     const poll = setInterval(() => {
       if (navigator.onLine) void refetch();
@@ -54,7 +56,7 @@ export function useLiveTrips(initial: Trip[]) {
     window.addEventListener('offline', onOffline);
 
     return () => {
-      void supabase.removeChannel(channel);
+      unsubscribe();
       clearInterval(poll);
       clearInterval(tick);
       window.removeEventListener('online', onOnline);
