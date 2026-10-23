@@ -22,18 +22,18 @@ export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
       .then((r) => r.ok)
       .catch(() => false);
     setBusy(false);
-    if (!ok) return setError(navigator.onLine ? 'No se pudo cambiar. Intenta de nuevo.' : 'Sin señal: inténtalo al recuperar conexión.');
+    if (!ok) return setError(navigator.onLine ? 'No se pudo cambiar. Prueba otra vez.' : 'Sin señal: prueba cuando vuelva la conexión.');
     setAvailable(next);
     navigator.vibrate?.(60);
   }
 
   return (
-    <section className="flex items-center gap-3 card rounded-2xl p-3">
+    <section data-tour="unidad" className="card flex items-center gap-3 rounded-3xl p-3">
       <VehiclePhoto vehicle={vehicle} size="sm" />
       <div className="flex-1">
         <p className="text-sm text-slate-500">Tu unidad</p>
-        <p className={`font-semibold ${available ? 'text-emerald-700' : 'text-slate-600'}`}>
-          {available ? 'Disponible' : 'No disponible'}
+        <p className={`font-bold ${available ? 'text-emerald-700' : 'text-slate-600'}`}>
+          {available ? 'Disponible para salir' : 'No disponible'}
         </p>
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>

@@ -46,7 +46,7 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
       p_stop_id: next?.stop_id ?? null,
     });
     setBusy(false);
-    if (e) return setError('No se pudo guardar. Revisa tu conexión e intenta de nuevo.');
+    if (e) return setError('No se pudo guardar. Revisa tu conexión y prueba otra vez.');
     setWait(next);
   }
 
@@ -61,9 +61,9 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
     if (picked) {
       return (
         <Card>
-          <p className="text-lg font-semibold">🚌 El bus llegó a {mine?.name}</p>
-          <p className="text-sm text-slate-600">¡Buen viaje!</p>
-          <button type="button" onClick={() => setWait(null)} className="mt-3 text-sm font-medium text-sky-700 underline">
+          <p className="text-lg font-bold">🚌 ¡Llegó tu camioneta a {mine?.name}!</p>
+          <p className="text-sm text-slate-600">¡Buen viaje, pana!</p>
+          <button type="button" onClick={() => setWait(null)} className="mt-3 text-sm font-semibold text-brand-700">
             Marcar otra parada
           </button>
         </Card>
@@ -75,29 +75,29 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm text-slate-500">Esperas en</p>
-            <p className="text-xl font-bold">{mine?.name}</p>
+            <p className="text-xl font-extrabold">{mine?.name}</p>
             <p className="text-sm text-slate-600">
               Salida {formatHour(trip.scheduled_at)} · {trip.routes?.name}
             </p>
           </div>
-          <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-800">
+          <span className="shrink-0 rounded-full bg-cyan-100 px-3 py-1 text-sm font-bold text-cyan-800">
             {others === 0 ? 'Solo tú' : `Tú y ${others} más`}
           </span>
         </div>
         <p className="mt-2 text-sm font-medium text-slate-700">
           {!isLive(trip)
-            ? 'El bus aún no sale.'
+            ? 'La camioneta todavía no ha arrancado.'
             : stopsAway === null
-              ? 'El bus ya va en camino.'
+              ? 'La camioneta ya viene en camino.'
               : stopsAway === 1
-                ? 'Tu parada es la siguiente.'
-                : `El bus está a ${stopsAway} paradas.`}
+                ? '¡Tu parada es la siguiente! Prepárate.'
+                : `La camioneta está a ${stopsAway} paradas.`}
         </p>
         <button
           type="button"
           disabled={busy}
           onClick={() => void save(null)}
-          className="mt-3 text-sm font-medium text-slate-600 underline disabled:opacity-50"
+          className="mt-3 text-sm font-semibold text-slate-500 disabled:opacity-50"
         >
           Ya no espero
         </button>
@@ -116,10 +116,10 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
           if (stopId) void save({ trip_id: trip.id, stop_id: stopId });
         }}
       >
-        <label className="text-sm text-slate-600">
+        <label className="text-sm font-medium text-slate-600">
           Salida
           <select
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 text-base"
+            className="field"
             value={trip.id}
             onChange={(e) => {
               setTripId(e.target.value);
@@ -134,10 +134,10 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
             ))}
           </select>
         </label>
-        <label className="text-sm text-slate-600">
+        <label className="text-sm font-medium text-slate-600">
           ¿En qué parada estás?
           <select
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 text-base"
+            className="field"
             value={stopId}
             onChange={(e) => setStopId(e.target.value)}
             required
@@ -157,7 +157,7 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         <button
           type="submit"
           disabled={busy || !stopId}
-          className="mt-1 rounded-xl bg-sky-500 px-4 py-3 text-lg font-bold text-white shadow active:scale-[0.98] disabled:opacity-40"
+          className="btn-primary mt-1"
         >
           📍 Estoy aquí
         </button>
@@ -168,5 +168,5 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="card rounded-2xl p-4">{children}</div>;
+  return <div className="card rounded-3xl p-4">{children}</div>;
 }

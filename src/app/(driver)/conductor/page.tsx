@@ -1,4 +1,4 @@
-import { AppHeader } from '@/components/AppHeader';
+import { AppShell } from '@/components/AppShell';
 import { DriverConsole } from '@/features/driver/DriverConsole';
 import { fetchTodayTrips } from '@/features/trips/query';
 import { ensureDemoDay } from '@/lib/demoDay';
@@ -9,9 +9,8 @@ export default async function DriverHome() {
   await ensureDemoDay();
   const trips = await fetchTodayTrips(supabase, { driverId: profile.id });
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col p-4">
-      <AppHeader name={profile.full_name} subtitle="Conductor" />
+    <AppShell profile={profile}>
       <DriverConsole trips={trips} />
-    </main>
+    </AppShell>
   );
 }

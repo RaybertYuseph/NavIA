@@ -79,7 +79,7 @@ export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBu
     }
   }
 
-  return <div ref={el} className={`${className} z-0 w-full overflow-hidden rounded-2xl bg-slate-200`} />;
+  return <div ref={el} className={`${className} z-0 w-full overflow-hidden rounded-3xl bg-slate-200`} />;
 }
 
 function escapeHtml(s: string) {

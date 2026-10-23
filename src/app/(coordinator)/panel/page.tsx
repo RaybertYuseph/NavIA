@@ -1,4 +1,4 @@
-import { AppHeader } from '@/components/AppHeader';
+import { AppShell } from '@/components/AppShell';
 import { FiscalPanel } from '@/features/panel/FiscalPanel';
 import { fetchTodayTrips } from '@/features/trips/query';
 import type { Vehicle } from '@/features/trips/types';
@@ -15,13 +15,12 @@ export default async function FiscalPage() {
   ]);
 
   return (
-    <main className="mx-auto max-w-4xl p-4">
-      <AppHeader name={profile.full_name} subtitle="Fiscal de la línea" />
+    <AppShell profile={profile} wide>
       <FiscalPanel
         initialTrips={trips}
         initialVehicles={(vehicles.data ?? []) as Vehicle[]}
         drivers={Object.fromEntries((drivers.data ?? []).map((d) => [d.id, d.full_name]))}
       />
-    </main>
+    </AppShell>
   );
 }

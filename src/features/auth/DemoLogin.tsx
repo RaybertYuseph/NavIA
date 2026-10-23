@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { Icon } from '@/components/icons';
 import { FormError } from './FormError';
 
 /**
@@ -10,10 +11,10 @@ import { FormError } from './FormError';
  * propósito (va en el navegador), así que esas cuentas no deben tener datos reales.
  */
 const ROLES = [
-  { email: 'fiscal@navia.test', title: 'Fiscal de la línea', detail: 'Unidades, mapa en vivo y salidas por ruta', icon: '🛰️', color: 'from-ink to-indigo-700' },
-  { email: 'conductor@navia.test', title: 'Conductor', detail: 'Disponible, paradas y estudiantes en espera', icon: '🚌', color: 'from-teal-500 to-cyan-500' },
-  { email: 'estudiante@navia.test', title: 'Estudiante', detail: 'Próxima salida, bus en el mapa y "Estoy en la parada"', icon: '🎓', color: 'from-brand-500 to-indigo-500' },
-];
+  { email: 'estudiante@navia.test', title: 'Estudiante', detail: 'Próxima salida, camioneta en el mapa y «Estoy aquí»', icon: 'pin', color: 'from-brand-400 to-indigo-500' },
+  { email: 'conductor@navia.test', title: 'Conductor', detail: 'Un botón por paso y quién espera en cada parada', icon: 'bus', color: 'from-emerald-400 to-teal-500' },
+  { email: 'fiscal@navia.test', title: 'Fiscal de la línea', detail: 'Unidades, mapa en vivo y salidas por ruta', icon: 'grid', color: 'from-ink to-indigo-700' },
+] as const;
 
 export function DemoLogin() {
   const router = useRouter();
@@ -47,23 +48,24 @@ export function DemoLogin() {
   }
 
   return (
-    <section aria-labelledby="demo" className="flex flex-col gap-2">
-      <h2 id="demo" className="text-center text-sm font-semibold uppercase tracking-wide text-slate-500">Tour de la demo · entra como</h2>
+    <section aria-labelledby="demo" className="flex flex-col gap-2.5">
+      <h2 id="demo" className="text-center text-xs font-bold tracking-wider text-slate-500 uppercase">Prueba la demo · entra como</h2>
       {ROLES.map((r) => (
         <button
           key={r.email}
           type="button"
           disabled={busy !== null}
           onClick={() => enter(r.email)}
-          className={`${r.color} flex items-center gap-3 rounded-2xl bg-linear-to-r p-4 text-left text-white shadow-lg shadow-brand-500/20 transition active:scale-[0.98] disabled:opacity-60`}
+          className="card flex items-center gap-3 rounded-3xl p-3 text-left transition active:scale-[0.98] disabled:opacity-60"
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl" aria-hidden="true">
-            {r.icon}
+          <span className={`${r.color} flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br text-white shadow-md`}>
+            <Icon name={r.icon} className="h-6 w-6" />
           </span>
-          <span>
-            <span className="block text-lg font-semibold">{busy === r.email ? 'Entrando…' : r.title}</span>
-            <span className="block text-sm opacity-90">{r.detail}</span>
+          <span className="flex-1">
+            <span className="block font-bold">{busy === r.email ? 'Entrando…' : r.title}</span>
+            <span className="block text-sm text-slate-500">{r.detail}</span>
           </span>
+          <Icon name="chevron" className="h-5 w-5 text-slate-400" />
         </button>
       ))}
       <FormError message={error} />

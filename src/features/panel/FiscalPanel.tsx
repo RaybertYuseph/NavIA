@@ -2,6 +2,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { Tabs } from '@/components/Tabs';
+import { fiscalTip, lineStatus, mostWaiting, staleUnits, type LineSummary } from '@/features/guide/answers';
+import { useGuide } from '@/features/guide/GuideProvider';
+import { NaviaFab } from '@/features/guide/NaviaFab';
 import { BusMap } from '@/features/map/BusMap';
 import { groupByRoute } from '@/features/trips/derive';
 import { useLiveTrips } from '@/features/trips/useLiveTrips';
@@ -24,6 +28,7 @@ const UNIT_STYLE: Record<UnitState, string> = {
 export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehicle[]; drivers: Record<string, string> }) {
   const { trips, now, online, refetch } = useLiveTrips(props.initialTrips);
   const vehicles = useLiveVehicles(props.initialVehicles);
+  const { tab } = useGuide();
 
   const units = vehicles.map((v) => {
     const trip = trips.find((t) => t.vehicle_id === v.id && isLive(t)) ?? null;
@@ -38,12 +43,22 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
   const done = trips.filter((t) => t.status === 'finalizada').length;
   const live = trips.filter((t) => isLive(t) && t.last_lat != null && t.last_lng != null);
   const waiting = trips.reduce((a, t) => a + totalWaiting(t), 0);
+  const summary: LineSummary = { enRuta: counts.en_ruta, disponibles: counts.disponible, fuera: counts.fuera, done, total: trips.length, waiting };
 
   return (
     <div className="flex flex-col gap-5">
       <OfflineBanner online={online} />
+      <Tabs
+        tabs={[
+          { id: 'resumen', label: 'Resumen', icon: 'grid' },
+          { id: 'unidades', label: 'Unidades', icon: 'bus', badge: counts.en_ruta },
+          { id: 'salidas', label: 'Salidas', icon: 'list' },
+        ]}
+      />
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      {tab === 'resumen' && (
+      <>
+      <section data-tour="kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Kpi label="En ruta" value={counts.en_ruta} tone="text-emerald-700" />
         <Kpi label="Disponibles" value={counts.disponible} tone="text-sky-700" />
         <Kpi label="Fuera de servicio" value={counts.fuera} tone="text-slate-600" />
@@ -51,10 +66,10 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         <Kpi label="Estudiantes en espera" value={waiting} tone="text-cyan-600" wide />
       </section>
 
-      <section aria-labelledby="mapa">
-        <h2 id="mapa" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Mapa en vivo</h2>
+      <section aria-labelledby="mapa" data-tour="mapa">
+        <h2 id="mapa" className="section-title">Mapa en vivo</h2>
         {live.length === 0 ? (
-          <p className="card rounded-2xl p-4 text-slate-600">Ninguna unidad está enviando ubicación ahora.</p>
+          <p className="card rounded-3xl p-4 text-slate-600">Ninguna unidad está enviando ubicación ahora.</p>
         ) : (
           <BusMap
             className="h-80"
@@ -69,11 +84,16 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         )}
       </section>
 
+      <ResetDemo onDone={refetch} />
+      </>
+      )}
+
+      {tab === 'unidades' && (
       <section aria-labelledby="unidades">
-        <h2 id="unidades" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Unidades</h2>
+        <h2 id="unidades" className="section-title">Unidades</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {units.map(({ vehicle, trip, state }) => (
-            <article key={vehicle.id} className="flex gap-3 card rounded-2xl p-3">
+            <article key={vehicle.id} className="card flex gap-3 rounded-3xl p-3">
               <PhotoUploader vehicle={vehicle} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
@@ -102,12 +122,14 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
           ))}
         </div>
       </section>
+      )}
 
+      {tab === 'salidas' && (
       <section aria-labelledby="salidas">
-        <h2 id="salidas" className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Salidas de hoy por ruta</h2>
+        <h2 id="salidas" className="section-title">Salidas de hoy por ruta</h2>
         <div className="flex flex-col gap-3">
           {groupByRoute(trips).map(({ route, trips: rt }) => (
-            <article key={rt[0].route_id} className="overflow-x-auto card rounded-2xl p-4">
+            <article key={rt[0].route_id} className="card overflow-x-auto rounded-3xl p-4">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold">{route.name}</h3>
                 {rt.some((t) => totalWaiting(t) > 0) && (
@@ -130,9 +152,9 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                 <tbody>
                   {rt.map((t) => (
                     <tr key={t.id} className="border-t border-slate-100">
-                      <td className="py-1.5 pr-3 font-medium">{formatHour(t.scheduled_at)}</td>
+                      <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{formatHour(t.scheduled_at)}</td>
                       <td className="py-1.5 pr-3 font-mono">{t.vehicles?.plate ?? '—'}</td>
-                      <td className="py-1.5 pr-3">{(t.driver_id && props.drivers[t.driver_id]) || '—'}</td>
+                      <td className="py-1.5 pr-3 whitespace-nowrap">{(t.driver_id && props.drivers[t.driver_id]) || '—'}</td>
                       <td className="py-1.5 pr-3">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[t.status]}`}>{STATUS_LABEL[t.status]}</span>
                       </td>
@@ -146,17 +168,26 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
           ))}
         </div>
       </section>
+      )}
 
-      <ResetDemo onDone={refetch} />
+      <NaviaFab
+        raised
+        tip={fiscalTip(summary)}
+        questions={[
+          { q: '¿Cómo va la línea?', answer: () => lineStatus(summary) },
+          { q: '¿Alguna unidad sin señal?', answer: () => staleUnits(trips, now) },
+          { q: '¿Dónde esperan más?', answer: () => mostWaiting(trips) },
+        ]}
+      />
     </div>
   );
 }
 
 function Kpi({ label, value, tone, wide }: { label: string; value: number | string; tone: string; wide?: boolean }) {
   return (
-    <div className={`card rounded-2xl p-3 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
-      <p className={`text-3xl font-bold ${tone}`}>{value}</p>
-      <p className="text-sm text-slate-600">{label}</p>
+    <div className={`card rounded-3xl p-4 ${wide ? 'col-span-2 sm:col-span-1' : ''}`}>
+      <p className={`text-3xl font-extrabold tracking-tight ${tone}`}>{value}</p>
+      <p className="text-sm font-medium text-slate-600">{label}</p>
     </div>
   );
 }
@@ -228,8 +259,8 @@ function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
   }
 
   return (
-    <section className="flex flex-col items-start gap-2 rounded-2xl border border-dashed border-slate-300 p-4">
-      <p className="text-sm text-slate-600">Demo: deja las salidas de hoy como al inicio del día para repetir el recorrido.</p>
+    <section className="flex flex-wrap items-center gap-3 rounded-3xl border border-dashed border-slate-300 p-4">
+      <p className="flex-1 text-sm text-slate-600">Demo: deja las salidas de hoy como al inicio del día para repetir el recorrido.</p>
       <button type="button" disabled={busy} onClick={reset} className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
         {busy ? 'Reiniciando…' : 'Reiniciar demo'}
       </button>
