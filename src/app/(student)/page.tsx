@@ -1,10 +1,12 @@
 import { AppHeader } from '@/components/AppHeader';
 import { fetchTodayTrips } from '@/features/trips/query';
 import { StudentHome } from '@/features/trips/StudentHome';
+import { ensureDemoDay } from '@/lib/demoDay';
 import { requireRole } from '@/lib/profile';
 
 export default async function StudentPage() {
   const { supabase, profile } = await requireRole(['student']);
+  await ensureDemoDay();
   const trips = await fetchTodayTrips(supabase);
 
   return (
