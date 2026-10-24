@@ -8,6 +8,7 @@ import { nextStop } from '@/features/driver/state';
 import { HOW_TO_MARK, fareInfo, minutesUntil, studentTip, whenNext, whereIsBus } from '@/features/guide/answers';
 import { useGuide } from '@/features/guide/GuideProvider';
 import { NaviaFab } from '@/features/guide/NaviaFab';
+import { NaviaSays } from '@/features/guide/NaviaSays';
 import { BusMap } from '@/features/map/BusMap';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { formatHour, timeAgo } from '@/lib/time';
@@ -40,10 +41,7 @@ export function StudentHome({ initial }: { initial: Trip[] }) {
 
       {tab === 'inicio' && (
         <>
-          <div className="flex items-end gap-2">
-            <NaviaAgent size={56} animated compact className="shrink-0" />
-            <p className="card mb-3 rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm font-medium">{studentTip(live, next, now)}</p>
-          </div>
+          <NaviaSays text={studentTip(live, next, now)} />
 
           <section aria-labelledby="proxima" data-tour="proxima">
             <h2 id="proxima" className="section-title">Próxima salida</h2>

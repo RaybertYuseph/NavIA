@@ -11,7 +11,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
       <div className="flex flex-col items-center text-center">
-        <NaviaAgent size={150} animated />
+        <NaviaAgent size={150} animated mood="happy" />
         <h1 className="brand-text mt-1 text-5xl font-extrabold tracking-tight">NavIA</h1>
         <p className="mt-1 text-lg font-bold">¡Epa! Soy tu copiloto de ruta</p>
         <p className="mt-1 text-sm text-slate-600">Sabe dónde viene tu camioneta sin buscar en el grupo de WhatsApp.</p>

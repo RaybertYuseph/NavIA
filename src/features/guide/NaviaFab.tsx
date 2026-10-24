@@ -4,23 +4,37 @@ import { Icon } from '@/components/icons';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import type { NaviaAnswer } from './answers';
 import { useGuide } from './GuideProvider';
+import { useTypewriter } from './useTypewriter';
 
 export type NaviaQuestion = { q: string; answer: () => NaviaAnswer };
 
 type Msg = { from: 'navia' | 'me'; text: string; tab?: string; actionLabel?: string };
 
 /**
- * NavIA dentro de la app: un botón flotante que abre una conversación corta con preguntas
- * frecuentes de la vista. Las respuestas salen de los datos en vivo que ya tiene la pantalla.
+ * NavIA dentro de la app: la gota flotando en una esquina abre una conversación corta con
+ * preguntas frecuentes de la vista. Las respuestas salen de los datos en vivo de la pantalla y
+ * NavIA las va diciendo (mueve la boca mientras se escriben; sonríe si empiezan con "¡").
  */
 export function NaviaFab({ tip, questions, raised = false }: { tip: string; questions: NaviaQuestion[]; raised?: boolean }) {
   const { setTab, startTour } = useGuide();
   const [open, setOpen] = useState(false);
   const [log, setLog] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [hint, setHint] = useState(false);
   const end = useRef<HTMLDivElement>(null);
+  const lastNavia = [...log].reverse().find((m) => m.from === 'navia');
 
-  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [log, typing]);
+  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [log, typing, speaking]);
+  // Un "¿Te ayudo?" breve al abrir la vista, para que se note que NavIA está ahí.
+  useEffect(() => {
+    const show = setTimeout(() => setHint(true), 2500);
+    const hide = setTimeout(() => setHint(false), 7000);
+    return () => {
+      clearTimeout(show);
+      clearTimeout(hide);
+    };
+  }, []);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
@@ -29,7 +43,9 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
   }, [open]);
 
   function show() {
+    setHint(false);
     setLog([{ from: 'navia', text: tip }]);
+    setSpeaking(true);
     setOpen(true);
   }
 
@@ -38,6 +54,7 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
     setTyping(true);
     setTimeout(() => {
       setTyping(false);
+      setSpeaking(true);
       setLog((l) => [...l, { from: 'navia', ...q.answer() }]);
     }, 450);
   }
@@ -50,12 +67,14 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
         data-fixed
         onClick={show}
         aria-label="Hablar con NavIA"
-        className={`fixed right-4 z-30 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-xl shadow-brand-500/30 ring-2 ring-brand-200 transition active:scale-95 md:bottom-6 ${
-          raised ? 'bottom-24' : 'bottom-6'
-        } ${open ? 'pointer-events-none opacity-0' : ''}`}
+        className={`fixed right-3 z-30 transition active:scale-95 md:bottom-4 ${raised ? 'bottom-20' : 'bottom-4'} ${open ? 'pointer-events-none opacity-0' : ''}`}
       >
-        <NaviaAgent size={52} compact />
-        <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-cyan-400 ring-2 ring-white agent-pulse" />
+        {hint && (
+          <span className="tour-pop absolute right-full bottom-12 mr-1 rounded-2xl rounded-br-md bg-white px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink shadow-lg ring-1 ring-slate-200/70">
+            ¿Te ayudo?
+          </span>
+        )}
+        <NaviaAgent size={60} animated mood={hint ? 'happy' : 'idle'} className="drop-shadow-[0_10px_14px_rgb(14_116_233/0.35)]" />
       </button>
 
       {open && (
@@ -63,7 +82,7 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
           <button type="button" aria-label="Cerrar" className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
           <section className="sheet-up relative flex max-h-[80dvh] w-full flex-col rounded-t-[2rem] bg-white shadow-2xl sm:max-w-sm sm:rounded-[2rem]">
             <header className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
-              <NaviaAgent size={44} animated compact />
+              <NaviaAgent size={52} animated compact talking={speaking} mood={!speaking && lastNavia?.text.startsWith('¡') ? 'happy' : 'idle'} />
               <div className="flex-1">
                 <p className="font-bold">NavIA</p>
                 <p className="flex items-center gap-1 text-xs text-emerald-600">
@@ -83,8 +102,8 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
                   </p>
                 ) : (
                   <div key={n} className="w-fit max-w-[90%] rounded-2xl rounded-bl-md bg-slate-100 px-3 py-2 text-sm">
-                    <p>{m.text}</p>
-                    {m.tab && (
+                    {n === log.length - 1 ? <Typed text={m.text} onDone={() => setSpeaking(false)} /> : <p>{m.text}</p>}
+                    {m.tab && (n < log.length - 1 || !speaking) && (
                       <button
                         type="button"
                         onClick={() => {
@@ -112,7 +131,7 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
             <footer className="border-t border-slate-100 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <div className="flex flex-wrap gap-2">
                 {questions.map((q) => (
-                  <button key={q.q} type="button" disabled={typing} onClick={() => ask(q)} className="chip">
+                  <button key={q.q} type="button" disabled={typing || speaking} onClick={() => ask(q)} className="chip">
                     {q.q}
                   </button>
                 ))}
@@ -132,5 +151,21 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
         </div>
       )}
     </>
+  );
+}
+
+/** La respuesta en curso, escrita letra a letra mientras NavIA habla. */
+function Typed({ text, onDone }: { text: string; onDone: () => void }) {
+  const { shown, done } = useTypewriter(text, { cps: 75 });
+  const done$ = useRef(onDone);
+  done$.current = onDone;
+  useEffect(() => {
+    if (done) done$.current();
+  }, [done]);
+  return (
+    <p>
+      {shown}
+      {!done && <span className="sr-only">{text.slice(shown.length)}</span>}
+    </p>
   );
 }

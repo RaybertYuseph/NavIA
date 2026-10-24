@@ -17,7 +17,7 @@ Stack: Next.js 15 (App Router) + TypeScript + Tailwind 4, Supabase (Postgres, Au
 
 **Estoy en la parada:** el conteo por parada vive en `trips.waiting` y llega por Realtime; cuando el conductor toca *Llegué a* esa parada, la espera se cierra sola. Nadie ve quién espera, solo cuántos.
 
-**Marca:** el agente NavIA (`src/features/brand/NaviaAgent.tsx`) es la mascota y el ícono de la app; la paleta azul claro está en `src/app/globals.css` (`brand-*`).
+**Marca:** NavIA es una gota azul con audífonos (`src/features/brand/NaviaAgent.tsx`). El cuerpo y la mano con el pin son imágenes en `public/brand/gota/` y la cara LED (ojos, boca que habla) es SVG animable. La guía vive en `src/features/guide/`: el tour inicial (NavIA camina hasta cada parte de la pantalla) y el botón flotante que responde preguntas con datos en vivo. La paleta está en `src/app/globals.css` (`brand-*`).
 
 Todos entran por `/login` (correo y contraseña, sin verificar el correo) y caen en su vista según `profiles.role`. El código por correo está listo pero apagado (`NEXT_PUBLIC_LOGIN_MODE=otp`).
 

@@ -1,134 +1,140 @@
+'use client';
+import { useEffect, useRef } from 'react';
+
 /**
- * NavIA, el agente y copiloto (variante C1 "Copiloto pulido"): una esfera azul claro con ojos
- * luminosos, audífonos con micrófono, orbes flotantes y una base holográfica.
- * - `animated`: flota, parpadea, los orbes orbitan y las luces laten (saludo de entrada).
- * - `headset`: audífonos y micrófono; están en un solo grupo para poder quitarlos fácil.
- * - `compact`: solo el personaje, sin base ni orbes; para el encabezado y tamaños pequeños.
- * Los ids de los degradados llevan prefijo `nv-` para no chocar con otros SVG de la página.
+ * NavIA, la gota copiloto: cuerpo azul con audífonos y zapatos (imagen), la mano con el pin en
+ * capa aparte para moverla, y una cara LED en SVG que parpadea, sonríe y habla.
+ * - `animated`: respira, parpadea y mueve el pin.
+ * - `talking`: mueve la boca (al escribir una respuesta). `mood="happy"`: ojos felices.
+ * - `walking`: rebote de caminata. `pointing`: levanta el pin para señalar. `flip`: mira a la izquierda.
+ * - `compact`: encuadre de la cabeza y el pin, para tamaños pequeños.
+ * Las animaciones se apagan con prefers-reduced-motion (globals.css).
  */
 export function NaviaAgent({
   size = 96,
   animated = false,
-  headset = true,
   compact = false,
+  talking = false,
+  mood = 'idle',
+  walking = false,
+  pointing = false,
+  flip = false,
   className = '',
 }: {
   size?: number;
   animated?: boolean;
-  headset?: boolean;
   compact?: boolean;
+  talking?: boolean;
+  mood?: 'idle' | 'happy';
+  walking?: boolean;
+  pointing?: boolean;
+  flip?: boolean;
   className?: string;
 }) {
-  const a = (cls: string) => (animated ? cls : undefined);
+  const mouth = useRef<SVGPathElement>(null);
+  const inner = useRef<SVGPathElement>(null);
+
+  useEffect(() => {
+    const draw = (o: number, w: number) => {
+      const d = mouthD(o, w);
+      mouth.current?.setAttribute('d', d.outer);
+      inner.current?.setAttribute('d', d.inner);
+    };
+    if (!talking || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      draw(mood === 'happy' ? 0.35 : 0.1, mood === 'happy' ? 1 : 0.9);
+      return;
+    }
+    let frame = 0;
+    const start = performance.now();
+    const tick = (t: number) => {
+      const s = (t - start) / 1000;
+      // Sílabas: dos senos desfasados dan una apertura irregular, más natural que un vaivén fijo.
+      const o = 0.15 + 0.75 * Math.abs(Math.sin(s * 13) * Math.sin(s * 4.7 + 0.6));
+      draw(o, 0.82 + 0.14 * Math.sin(s * 6.1));
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [talking, mood]);
+
+  const [vx, vy, vw, vh] = compact ? [90, 15, 330, 330] : [0, 0, 430, 522];
+  const happy = mood === 'happy';
+  const motion = walking ? 'gota-walk' : animated ? 'gota-bob' : '';
+  const hand = pointing ? 'gota-point' : animated || walking ? 'gota-hand' : '';
+
   return (
     <svg
-      viewBox={compact ? '30 22 140 140' : '0 0 200 200'}
+      viewBox={`${vx} ${vy} ${vw} ${vh}`}
       width={size}
-      height={size}
+      height={Math.round((size * vh) / vw)}
       role="img"
       aria-label="NavIA, tu copiloto de ruta"
-      className={`${animated ? 'agent-float' : ''} ${className}`}
+      className={className}
+      style={{ overflow: 'visible', transform: flip ? 'scaleX(-1)' : undefined }}
     >
       <defs>
-        <radialGradient id="nv-body" cx="38%" cy="28%" r="80%">
-          <stop offset="0" stopColor="#F7FDFF" />
-          <stop offset=".3" stopColor="#B5ECFF" />
-          <stop offset=".7" stopColor="#4FC3F7" />
-          <stop offset="1" stopColor="#1F7BE0" />
+        <radialGradient id="nv-eye" cx="45%" cy="40%" r="65%">
+          <stop offset="0" stopColor="#F2FFFF" />
+          <stop offset=".45" stopColor="#9FF6FF" />
+          <stop offset="1" stopColor="#3FD8F5" />
         </radialGradient>
-        <radialGradient id="nv-shade" cx="70%" cy="85%" r="55%">
-          <stop offset="0" stopColor="#1243A8" stopOpacity=".45" />
-          <stop offset="1" stopColor="#1243A8" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="nv-rim" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#CBD5E1" />
-          <stop offset=".45" stopColor="#7DF9FF" />
-          <stop offset="1" stopColor="#60A5FA" />
-        </linearGradient>
-        <linearGradient id="nv-headset" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2B3A8F" />
-          <stop offset="1" stopColor="#121A4D" />
-        </linearGradient>
-        <linearGradient id="nv-beam" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#67E8F9" stopOpacity="0" />
-          <stop offset="1" stopColor="#67E8F9" stopOpacity=".5" />
-        </linearGradient>
         <radialGradient id="nv-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor="#67E8F9" stopOpacity=".9" />
-          <stop offset="1" stopColor="#67E8F9" stopOpacity="0" />
+          <stop offset="0" stopColor="#7DF3FF" stopOpacity=".55" />
+          <stop offset="1" stopColor="#7DF3FF" stopOpacity="0" />
         </radialGradient>
-        <filter id="nv-blur" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="2.2" result="b" />
-          <feMerge>
-            <feMergeNode in="b" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
+        <radialGradient id="nv-shadow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#0B1533" stopOpacity=".3" />
+          <stop offset="1" stopColor="#0B1533" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
-      {/* Base holográfica */}
-      {!compact && (
-        <g>
-          <path d="M76 146 L62 178 L138 178 L124 146 Z" fill="url(#nv-beam)" />
-          <ellipse cx="100" cy="180" rx="48" ry="10" fill="url(#nv-glow)" />
-          <ellipse cx="100" cy="180" rx="36" ry="5.5" fill="none" stroke="#22D3EE" strokeWidth="2.5" filter="url(#nv-blur)" className={a('agent-pulse')} />
-          <ellipse cx="100" cy="180" rx="22" ry="3" fill="none" stroke="#A5F3FC" strokeWidth="1.5" opacity=".8" />
+      {!compact && <ellipse className={animated || walking ? 'gota-shadow' : ''} cx="215" cy="505" rx="140" ry="16" fill="url(#nv-shadow)" />}
+      <g className={motion}>
+        <image href="/brand/gota/base.webp" x="0" y="0" width="430" height="522" />
+        <g className={hand}>
+          <image href="/brand/gota/mano.webp" x="0" y="0" width="430" height="522" />
         </g>
-      )}
-
-      {/* Cuerpo */}
-      <circle cx="100" cy="90" r="58" fill="url(#nv-rim)" />
-      <circle cx="100" cy="90" r="54.5" fill="url(#nv-body)" />
-      <circle cx="100" cy="90" r="54.5" fill="url(#nv-shade)" />
-      <ellipse cx="78" cy="58" rx="20" ry="9" fill="#fff" opacity=".75" transform="rotate(-32 78 58)" />
-      <circle cx="64" cy="70" r="3" fill="#fff" opacity=".9" />
-
-      {/* Cara */}
-      <g filter="url(#nv-blur)" className={a('agent-blink')} style={{ transformOrigin: '100px 88px' }}>
-        <ellipse cx="80" cy="88" rx="8" ry="11" fill="#0B1440" />
-        <ellipse cx="120" cy="88" rx="8" ry="11" fill="#0B1440" />
-        <ellipse cx="82" cy="84" rx="3" ry="3.5" fill="#7DF9FF" />
-        <ellipse cx="122" cy="84" rx="3" ry="3.5" fill="#7DF9FF" />
+        <g transform="rotate(-9 236 200)">
+          <ellipse cx="203" cy="194" rx="26" ry="26" fill="url(#nv-glow)" />
+          <ellipse cx="268" cy="194" rx="26" ry="26" fill="url(#nv-glow)" />
+          <g className={animated || walking ? 'gota-blink' : ''} opacity={happy ? 0 : 1}>
+            <rect x="191" y="178" width="24" height="31" rx="12" fill="url(#nv-eye)" />
+            <rect x="256" y="178" width="24" height="31" rx="12" fill="url(#nv-eye)" />
+          </g>
+          <path
+            d="M190 196 Q203 180 216 196 M255 196 Q268 180 281 196"
+            stroke="#A8F7FF"
+            strokeWidth="7"
+            fill="none"
+            strokeLinecap="round"
+            opacity={happy ? 1 : 0}
+          />
+          <ellipse cx="236" cy="230" rx="44" ry="22" fill="url(#nv-glow)" />
+          <path ref={mouth} d={mouthD(0.1, 0.9).outer} fill="url(#nv-eye)" />
+          <path ref={inner} d="" fill="#0A1C66" />
+        </g>
       </g>
-      <ellipse cx="66" cy="106" rx="8" ry="4.5" fill="#E0F2FE" opacity=".4" />
-      <ellipse cx="134" cy="106" rx="8" ry="4.5" fill="#E0F2FE" opacity=".4" />
-      <path d="M90 107 Q100 117 110 107" stroke="#0B1440" strokeWidth="4" fill="none" strokeLinecap="round" />
-
-      {/* Audífonos con micrófono */}
-      {headset && (
-        <g>
-          <path d="M44 82 A57 57 0 0 1 156 82" stroke="url(#nv-headset)" strokeWidth="7" fill="none" strokeLinecap="round" />
-          <rect x="148" y="72" width="18" height="30" rx="9" fill="url(#nv-headset)" />
-          <rect x="153" y="79" width="8" height="16" rx="4" fill="#67E8F9" filter="url(#nv-blur)" className={a('agent-pulse')} />
-          <rect x="34" y="72" width="18" height="30" rx="9" fill="url(#nv-headset)" />
-          <path d="M154 100 Q152 120 128 122" stroke="url(#nv-headset)" strokeWidth="4" fill="none" strokeLinecap="round" />
-          <rect x="116" y="117" width="14" height="9" rx="4.5" fill="url(#nv-headset)" />
-          <circle cx="118" cy="121.5" r="2.5" fill="#67E8F9" filter="url(#nv-blur)" className={a('agent-pulse')} />
-        </g>
-      )}
-
-      {/* Orbes y destellos */}
-      {!compact && (
-        <>
-          <g className={a('agent-orbit')}>
-            <circle cx="26" cy="112" r="12" fill="url(#nv-body)" stroke="url(#nv-rim)" strokeWidth="2" />
-            <ellipse cx="23" cy="108" rx="4" ry="2.5" fill="#fff" opacity=".7" />
-          </g>
-          <g className={a('agent-orbit agent-orbit-late')}>
-            <circle cx="176" cy="50" r="12" fill="url(#nv-body)" stroke="url(#nv-rim)" strokeWidth="2" />
-            <ellipse cx="173" cy="46" rx="4" ry="2.5" fill="#fff" opacity=".7" />
-          </g>
-          <path transform="translate(192 30)" d={SPARKLE} fill="#CBD5E1" filter="url(#nv-blur)" />
-          <path transform="translate(18 86) scale(0.6)" d={SPARKLE} fill="#7DF9FF" filter="url(#nv-blur)" />
-        </>
-      )}
     </svg>
   );
 }
 
-const SPARKLE = 'M0 -9 l2.2 6.8 6.8 2.2 -6.8 2.2 -2.2 6.8 -2.2 -6.8 -6.8 -2.2 6.8 -2.2z';
+/** Boca LED: `o` es la apertura (0 cerrada, 1 abierta) y `w` el ancho relativo. */
+function mouthD(o: number, w: number) {
+  const cx = 236;
+  const y = 222;
+  const W = 30 * w;
+  const top = 3 + o * 2;
+  const bot = 13 + o * 19;
+  return {
+    outer: `M${cx - W} ${y} Q${cx} ${y + top} ${cx + W} ${y} Q${cx + W * 0.9} ${y + bot * 0.9} ${cx} ${y + bot} Q${cx - W * 0.9} ${y + bot * 0.9} ${cx - W} ${y} Z`,
+    inner:
+      o > 0.18
+        ? `M${cx - W * 0.72} ${y + top + 2} Q${cx} ${y + top + 4} ${cx + W * 0.72} ${y + top + 2} Q${cx + W * 0.6} ${y + bot * 0.8} ${cx} ${y + bot - 3.5} Q${cx - W * 0.6} ${y + bot * 0.8} ${cx - W * 0.72} ${y + top + 2} Z`
+        : '',
+  };
+}
 
-/** Logotipo: el agente NavIA + la palabra "NavIA" con el degradado de la marca. */
+/** Logotipo: la cabeza de NavIA + la palabra "NavIA" con el degradado de la marca. */
 export function NaviaLogo({ size = 32 }: { size?: number }) {
   return (
     <span className="inline-flex items-center gap-2">
