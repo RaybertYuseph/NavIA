@@ -1,24 +1,26 @@
-import { AppHeader } from '@/components/AppHeader';
-import { LiveTrips } from '@/features/trips/LiveTrips';
-import { TRIP_SELECT, type Trip } from '@/features/trips/types';
+import { AppShell } from '@/components/AppShell';
+import { FiscalPanel } from '@/features/panel/FiscalPanel';
+import { fetchTodayTrips } from '@/features/trips/query';
+import type { Vehicle } from '@/features/trips/types';
+import { ensureDemoDay } from '@/lib/demoDay';
 import { requireRole } from '@/lib/profile';
-import { caracasDayRange } from '@/lib/time';
 
-// Corte 1: el coordinador ve las salidas en vivo. Aprobaciones, rutas y conciliación llegan en los sprints 3 a 5.
-export default async function CoordinatorHome() {
+export default async function FiscalPage() {
   const { supabase, profile } = await requireRole(['coordinator', 'admin']);
-  const { from, to } = caracasDayRange();
-  const { data } = await supabase
-    .from('trips')
-    .select(TRIP_SELECT)
-    .gte('scheduled_at', from)
-    .lt('scheduled_at', to)
-    .order('scheduled_at');
+  await ensureDemoDay();
+  const [trips, vehicles, drivers] = await Promise.all([
+    fetchTodayTrips(supabase),
+    supabase.from('vehicles').select('id, plate, capacity, photo_url, available').eq('active', true).order('plate'),
+    supabase.from('profiles').select('id, full_name').eq('role', 'driver'),
+  ]);
 
   return (
-    <main className="mx-auto max-w-2xl p-4">
-      <AppHeader name={profile.full_name} subtitle="Panel del coordinador" />
-      <LiveTrips initial={(data ?? []) as unknown as Trip[]} />
-    </main>
+    <AppShell profile={profile} wide>
+      <FiscalPanel
+        initialTrips={trips}
+        initialVehicles={(vehicles.data ?? []) as Vehicle[]}
+        drivers={Object.fromEntries((drivers.data ?? []).map((d) => [d.id, d.full_name]))}
+      />
+    </AppShell>
   );
 }

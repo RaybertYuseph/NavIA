@@ -35,3 +35,20 @@ export function allowedActions(state: DriverState, stops: Stop[]) {
     finDeRuta: active,
   };
 }
+
+export type PrimaryAction = { type: 'en_camino' | 'en_parada' | 'fin_de_ruta'; stop: Stop | null } | null;
+
+/** El único paso que sigue para el conductor; la pantalla lo muestra como el botón grande. */
+export function primaryAction(state: DriverState, stops: Stop[]): PrimaryAction {
+  const upcoming = nextStop(stops, state.currentStopId);
+  switch (state.status) {
+    case 'scheduled':
+      return { type: 'en_camino', stop: null };
+    case 'en_parada':
+      return upcoming ? { type: 'en_camino', stop: null } : { type: 'fin_de_ruta', stop: null };
+    case 'en_camino':
+      return upcoming ? { type: 'en_parada', stop: upcoming } : { type: 'fin_de_ruta', stop: null };
+    default:
+      return null;
+  }
+}

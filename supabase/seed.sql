@@ -11,6 +11,7 @@ insert into operators (id, name, rif, pm_bank_code, pm_phone, pm_id_number) valu
 
 insert into vehicles (id, operator_id, plate, capacity) values
   ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000010', 'AB123CD', 30);
+-- (Las unidades extra de la demo las crea supabase/demo.sql.)
 
 insert into routes (id, operator_id, university_id, name, direction, fare_usd) values
   ('00000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000010',
@@ -29,13 +30,17 @@ values
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000d1', 'authenticated', 'authenticated',
    'conductor@navia.test', now(), '{"full_name": "Conductor de Prueba"}', now(), now()),
   ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000e1', 'authenticated', 'authenticated',
-   'estudiante@navia.test', now(), '{"full_name": "Estudiante de Prueba"}', now(), now());
+   'estudiante@navia.test', now(), '{"full_name": "Estudiante de Prueba"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-0000000000c1', 'authenticated', 'authenticated',
+   'fiscal@navia.test', now(), '{"full_name": "Fiscal de Prueba"}', now(), now());
 
 -- El trigger handle_new_user ya creó los perfiles; aquí se asignan rol y operador.
 update profiles set role = 'driver', status = 'verified', operator_id = '00000000-0000-0000-0000-000000000010'
   where id = '00000000-0000-0000-0000-0000000000d1';
 update profiles set status = 'verified', university_id = '00000000-0000-0000-0000-000000000001'
   where id = '00000000-0000-0000-0000-0000000000e1';
+update profiles set role = 'coordinator', status = 'verified', operator_id = '00000000-0000-0000-0000-000000000010'
+  where id = '00000000-0000-0000-0000-0000000000c1';
 
 -- Dos salidas para hoy (hora de Caracas, UTC-4).
 insert into trips (route_id, vehicle_id, driver_id, scheduled_at)

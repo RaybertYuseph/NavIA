@@ -44,3 +44,11 @@ describe('cola offline', () => {
     expect(partial).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ids sembrados a mano', () => {
+  it('la cola acepta ids que no son UUID v4 (p. ej. 00000000-…-000000000020)', async () => {
+    const { queueItem } = await import('@/lib/offline/types');
+    const id = '00000000-0000-0000-0000-000000000020';
+    expect(queueItem.safeParse({ kind: 'event', id, trip_id: id, type: 'en_camino', stop_id: id, occurred_at: new Date().toISOString() }).success).toBe(true);
+  });
+});
