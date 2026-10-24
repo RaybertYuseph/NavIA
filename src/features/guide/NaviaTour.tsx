@@ -78,9 +78,10 @@ export function NaviaTour(props: {
   firstName: string;
   manual: { ask: boolean } | null;
   onTab: (tab: string) => void;
+  onTouring: (on: boolean) => void;
   onClose: () => void;
 }) {
-  const { view, userId, firstName, manual, onTab, onClose } = props;
+  const { view, userId, firstName, manual, onTab, onTouring, onClose } = props;
   const steps = TOURS[view];
   const [phase, setPhase] = useState<Phase>(manual ? (manual.ask ? 'ask' : 0) : null);
   const [box, setBox] = useState<Box | null>(null);
@@ -98,6 +99,12 @@ export function NaviaTour(props: {
   }, [manual, userId]);
 
   const step = typeof phase === 'number' ? steps[phase] : null;
+
+  // Una sola NavIA en pantalla: mientras camina, el botón flotante se oculta (vuelve al final).
+  useEffect(() => {
+    onTouring(phase !== null);
+    return () => onTouring(false);
+  }, [phase, onTouring]);
 
   const walkTo = useCallback((next: Box | null) => {
     const s = placeNavia(next);

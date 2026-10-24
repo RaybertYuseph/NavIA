@@ -10,6 +10,8 @@ type Guide = {
   setTab: (tab: string) => void;
   /** Abre el recorrido de la vista; `ask` empieza por la pregunta "¿Primera vez que me usas?". */
   startTour: (ask?: boolean) => void;
+  /** El tour está abierto y NavIA camina por la pantalla (el botón flotante se oculta). */
+  touring: boolean;
 };
 
 const GuideContext = createContext<Guide | null>(null);
@@ -24,6 +26,7 @@ export function useGuide() {
 export function GuideProvider({ view, userId, firstName, children }: { view: View; userId: string; firstName: string; children: React.ReactNode }) {
   const [tab, setTabState] = useState(DEFAULT_TAB[view]);
   const [tour, setTour] = useState<{ ask: boolean; key: number } | null>(null);
+  const [touring, setTouring] = useState(false);
 
   const setTab = useCallback((next: string) => {
     setTabState(next);
@@ -32,7 +35,7 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
   const startTour = useCallback((ask = false) => setTour({ ask, key: Date.now() }), []);
 
   return (
-    <GuideContext.Provider value={{ view, firstName, tab, setTab, startTour }}>
+    <GuideContext.Provider value={{ view, firstName, tab, setTab, startTour, touring }}>
       {children}
       <NaviaTour
         key={tour?.key ?? 'auto'}
@@ -41,6 +44,7 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
         firstName={firstName}
         manual={tour}
         onTab={setTabState}
+        onTouring={setTouring}
         onClose={() => setTour(null)}
       />
     </GuideContext.Provider>

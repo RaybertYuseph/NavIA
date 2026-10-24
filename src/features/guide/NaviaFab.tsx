@@ -16,7 +16,7 @@ type Msg = { from: 'navia' | 'me'; text: string; tab?: string; actionLabel?: str
  * NavIA las va diciendo (mueve la boca mientras se escriben; sonríe si empiezan con "¡").
  */
 export function NaviaFab({ tip, questions, raised = false }: { tip: string; questions: NaviaQuestion[]; raised?: boolean }) {
-  const { setTab, startTour } = useGuide();
+  const { setTab, startTour, touring } = useGuide();
   const [open, setOpen] = useState(false);
   const [log, setLog] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
@@ -67,7 +67,7 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
         data-fixed
         onClick={show}
         aria-label="Hablar con NavIA"
-        className={`fixed right-3 z-30 transition active:scale-95 md:bottom-4 ${raised ? 'bottom-20' : 'bottom-4'} ${open ? 'pointer-events-none opacity-0' : ''}`}
+        className={`fixed right-3 z-30 transition active:scale-95 md:bottom-4 ${raised ? 'bottom-20' : 'bottom-4'} ${open || touring ? 'pointer-events-none opacity-0' : ''}`}
       >
         {hint && (
           <span className="tour-pop absolute right-full bottom-12 mr-1 rounded-2xl rounded-br-md bg-white px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink shadow-lg ring-1 ring-slate-200/70">
