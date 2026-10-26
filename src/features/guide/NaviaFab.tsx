@@ -26,13 +26,22 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
   const lastNavia = [...log].reverse().find((m) => m.from === 'navia');
 
   useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [log, typing, speaking]);
-  // Un "¿Te ayudo?" breve al abrir la vista, para que se note que NavIA está ahí.
+  // Un "¿Te ayudo?" breve al abrir la vista, para que se note que NavIA está ahí. Se va al primer
+  // toque o scroll: no debe quedar encima de un botón que la persona quiere usar.
   useEffect(() => {
     const show = setTimeout(() => setHint(true), 2500);
     const hide = setTimeout(() => setHint(false), 7000);
+    const dismiss = () => {
+      clearTimeout(show);
+      setHint(false);
+    };
+    window.addEventListener('pointerdown', dismiss, { once: true });
+    window.addEventListener('scroll', dismiss, { once: true, passive: true });
     return () => {
       clearTimeout(show);
       clearTimeout(hide);
+      window.removeEventListener('pointerdown', dismiss);
+      window.removeEventListener('scroll', dismiss);
     };
   }, []);
   useEffect(() => {
@@ -70,7 +79,7 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
         className={`fixed right-3 z-30 transition active:scale-95 md:bottom-4 ${raised ? 'bottom-20' : 'bottom-4'} ${open || touring ? 'pointer-events-none opacity-0' : ''}`}
       >
         {hint && (
-          <span className="tour-pop absolute right-full bottom-12 mr-1 rounded-2xl rounded-br-md bg-white px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink shadow-lg ring-1 ring-slate-200/70">
+          <span className="tour-pop pointer-events-none absolute right-full bottom-12 mr-1 rounded-2xl rounded-br-md bg-white px-3 py-2 text-sm font-semibold whitespace-nowrap text-ink shadow-lg ring-1 ring-slate-200/70">
             ¿Te ayudo?
           </span>
         )}
