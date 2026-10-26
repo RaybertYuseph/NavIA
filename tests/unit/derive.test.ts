@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupByRoute, nextDeparture, pendingStops, stopsForMap } from '@/features/trips/derive';
+import { groupByRoute, nextDeparture, pendingStops, stopsForMap, waitingByRoute } from '@/features/trips/derive';
 import type { Trip } from '@/features/trips/types';
 
 const stops = [1, 2, 3].map((seq) => ({ id: `s${seq}`, seq, name: `P${seq}`, lat: seq, lng: seq }));
@@ -52,5 +52,17 @@ describe('pendingStops', () => {
     expect(pendingStops(trip('a', '06:00', 'scheduled')).map((s) => s.seq)).toEqual([1, 2, 3]);
     expect(pendingStops({ ...trip('a', '06:00', 'en_parada'), current_stop_id: 's2' }).map((s) => s.seq)).toEqual([3]);
     expect(pendingStops(trip('a', '06:00', 'finalizada'))).toEqual([]);
+  });
+});
+
+describe('waitingByRoute', () => {
+  it('suma la espera de todas las salidas de la ruta, parada por parada', () => {
+    const a = { ...trip('a', '06:00', 'en_camino', 'r1'), waiting: { s2: 2 } };
+    const b = { ...trip('b', '07:00', 'scheduled', 'r1'), waiting: { s2: 1, s3: 4 } };
+    const c = trip('c', '06:10', 'scheduled', 'r2');
+    const [r1, r2] = waitingByRoute([a, b, c]);
+    expect(r1.total).toBe(7);
+    expect(r1.stops.map((s) => s.n)).toEqual([0, 3, 4]);
+    expect(r2.total).toBe(0);
   });
 });

@@ -47,7 +47,7 @@ export function whenNext(next: Trip | null, now: number): NaviaAnswer {
 }
 
 export const HOW_TO_MARK: NaviaAnswer = {
-  text: 'En Inicio elige tu salida y tu parada, y toca «Estoy aquí». El conductor ve cuántos esperan y yo te aviso cuando la camioneta llegue.',
+  text: 'En Inicio elige tu salida y tu parada, y toca «Estoy aquí» estando a menos de 50 m (lo confirmo con tu GPS). El conductor ve cuántos esperan y yo te aviso cuando la camioneta llegue.',
   tab: 'inicio',
   actionLabel: 'Marcar mi parada',
 };

@@ -25,7 +25,7 @@ export const DEFAULT_TAB: Record<View, string> = { student: 'inicio', driver: 'r
 export const TOURS: Record<View, TourStep[]> = {
   student: [
     { tab: 'inicio', target: 'proxima', title: 'Tu próxima salida', body: 'Aquí ves a qué hora sale la próxima camioneta, de qué ruta es y su foto para que la reconozcas.' },
-    { tab: 'inicio', target: 'espera', title: 'Marca tu parada', body: 'Cuando llegues a la parada toca «Estoy aquí». El conductor ve cuántos están esperando y yo te aviso cuando la camioneta llegue.' },
+    { tab: 'inicio', target: 'espera', title: 'Marca tu parada', body: 'Ya en la parada, toca «Estoy aquí»: confirmo con tu GPS que estás a menos de 50 m. El conductor ve cuántos esperan y yo te aviso cuando llegue la camioneta.' },
     { tab: 'envivo', target: 'tab-envivo', title: 'En vivo', body: 'En esta pestaña ves en el mapa dónde vienen las camionetas que ya arrancaron.' },
     { tab: 'horarios', target: 'tab-horarios', title: 'Rutas y horarios', body: 'Todas las salidas de hoy por ruta, con sus paradas y el pasaje.' },
     { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Si tienes una duda, tócame. Te digo dónde viene tu camioneta, cuándo sale la próxima y cómo marcar tu parada.' },

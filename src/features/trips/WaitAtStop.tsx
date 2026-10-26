@@ -1,22 +1,48 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { distanceM } from '@/lib/geo';
 import { createClient } from '@/lib/supabase/client';
 import { formatHour } from '@/lib/time';
 import { pendingStops } from './derive';
 import { isLive, sortedStops, type Trip } from './types';
 
 type MyWait = { trip_id: string; stop_id: string };
+type Point = { lat: number; lng: number };
+
+/** Radio para marcar la parada; set_my_wait lo vuelve a validar en el servidor. */
+const RANGE_M = 50;
+const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
+const OUT_OF_RANGE = `Debes estar a menos de ${RANGE_M} m de tu parada para marcarla.`;
+const NO_PERMISSION =
+  'Necesito tu ubicación para confirmar que estás en la parada. Actívala en el candado junto a la dirección (Permisos → Ubicación) y prueba otra vez.';
+const NO_FIX = 'No pude obtener tu ubicación. Revisa que el GPS esté encendido y prueba otra vez.';
+
+function locate() {
+  return new Promise<Point>((resolve, reject) => {
+    if (!('geolocation' in navigator)) return reject(new Error('sin_gps'));
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      reject,
+      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 15_000 },
+    );
+  });
+}
+
+function howFar(m: number) {
+  return m >= 1000 ? `${(m / 1000).toFixed(1).replace('.', ',')} km` : `${Math.round(m)} m`;
+}
 
 /**
- * "Estoy en la parada": el estudiante marca dónde espera una salida de hoy. El conteo llega en
- * trips.waiting por Realtime; cuando el bus pasa por esa parada la espera se da por recogida.
+ * "Estoy en la parada": el estudiante marca dónde espera una salida de hoy, solo si su GPS lo
+ * ubica a 50 m o menos de la parada. El conteo llega en trips.waiting por Realtime; cuando el
+ * bus pasa por esa parada la espera se da por recogida. En la demo se puede simular la ubicación.
  */
 export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferredTripId: string | null }) {
   const open = trips.filter((t) => pendingStops(t).length > 0 || isLive(t));
   const [wait, setWait] = useState<MyWait | null>(null);
   const [tripId, setTripId] = useState<string | null>(null);
   const [stopId, setStopId] = useState<string>('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<false | 'gps' | 'save'>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,17 +81,38 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
   const trip = trips.find((t) => t.id === (wait?.trip_id ?? tripId ?? preferredTripId)) ?? open[0] ?? null;
   if (!trip) return null;
 
-  async function save(next: MyWait | null) {
+  async function save(next: MyWait | null, at?: Point) {
     if (!trip) return;
-    setBusy(true);
+    setBusy('save');
     setError(null);
-    const { error: e } = await createClient().rpc('set_my_wait', {
-      p_trip_id: next?.trip_id ?? trip.id,
-      p_stop_id: next?.stop_id ?? null,
-    });
+    const supabase = createClient();
+    const args = { p_trip_id: next?.trip_id ?? trip.id, p_stop_id: next?.stop_id ?? null };
+    let { error: e } = await supabase.rpc('set_my_wait', { ...args, p_lat: at?.lat ?? null, p_lng: at?.lng ?? null });
+    // Base sin la migración 0006 (set_my_wait de dos argumentos): se guarda igual, validado solo aquí.
+    if (e?.code === 'PGRST202') ({ error: e } = await supabase.rpc('set_my_wait', args));
     setBusy(false);
-    if (e) return setError('No se pudo guardar. Revisa tu conexión y prueba otra vez.');
+    if (e) return setError(e.hint === 'fuera_de_rango' ? OUT_OF_RANGE : 'No se pudo guardar. Revisa tu conexión y prueba otra vez.');
     setWait(next);
+  }
+
+  /** Marca la parada si el GPS confirma que el estudiante está a 50 m o menos. */
+  async function markHere(stop: Point & { id: string }) {
+    if (!trip) return;
+    setBusy('gps');
+    setError(null);
+    let at: Point;
+    try {
+      at = await locate();
+    } catch (e) {
+      setBusy(false);
+      return setError((e as GeolocationPositionError).code === 1 ? NO_PERMISSION : NO_FIX);
+    }
+    const d = distanceM(at, stop);
+    if (d > RANGE_M) {
+      setBusy(false);
+      return setError(`${OUT_OF_RANGE} Ahora estás a unos ${howFar(d)}.`);
+    }
+    await save({ trip_id: trip.id, stop_id: stop.id }, at);
   }
 
   if (wait) {
@@ -113,7 +160,7 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         </p>
         <button
           type="button"
-          disabled={busy}
+          disabled={!!busy}
           onClick={() => void save(null)}
           className="btn-ghost mt-3 w-full disabled:opacity-50"
         >
@@ -125,13 +172,14 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
   }
 
   const choices = pendingStops(trip);
+  const chosen = choices.find((s) => s.id === stopId);
   return (
     <Card>
       <form
         className="flex flex-col gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (stopId) void save({ trip_id: trip.id, stop_id: stopId });
+          if (chosen) void markHere(chosen);
         }}
       >
         <label className="text-sm font-medium text-slate-600">
@@ -174,12 +222,27 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         </label>
         <button
           type="submit"
-          disabled={busy || !stopId}
+          disabled={!!busy || !chosen}
           className="btn-primary mt-1"
         >
-          📍 Estoy aquí
+          {busy === 'gps' ? 'Buscando tu ubicación…' : busy === 'save' ? 'Guardando…' : '📍 Estoy aquí'}
         </button>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && (
+          <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+            {error}
+          </p>
+        )}
+        {DEMO && (
+          <button
+            type="button"
+            disabled={!!busy || !chosen}
+            onClick={() => chosen && void save({ trip_id: trip.id, stop_id: chosen.id }, chosen)}
+            className="btn-ghost text-sm disabled:opacity-50"
+          >
+            Simular que estoy en la parada (demo)
+          </button>
+        )}
+        <p className="text-xs text-slate-500">Uso tu ubicación solo para confirmar que estás a menos de {RANGE_M} m de la parada.</p>
       </form>
     </Card>
   );

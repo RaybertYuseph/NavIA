@@ -75,6 +75,7 @@ supabase/
   migrations/0003_login_correo.sql  login por correo: el perfil toma el nombre del correo
   migrations/0004_tres_vistas.sql   foto y disponibilidad de unidades, reinicio de la demo
   migrations/0005_espera_en_parada.sql  "Estoy en la parada" y conteo por parada
+  migrations/0006_espera_con_gps.sql    "Estoy aquí" solo a 50 m o menos de la parada
   demo.sql                     cuentas, unidades y salidas de la demo
   templates/codigo.html        correo con el código de entrada
   datos_piloto.sql             ruta, paradas y salidas de hoy para el proyecto en la nube

@@ -7,7 +7,7 @@ import { fiscalTip, lineStatus, mostWaiting, staleUnits, type LineSummary } from
 import { useGuide } from '@/features/guide/GuideProvider';
 import { NaviaFab } from '@/features/guide/NaviaFab';
 import { BusMap } from '@/features/map/BusMap';
-import { groupByRoute } from '@/features/trips/derive';
+import { groupByRoute, waitingByRoute } from '@/features/trips/derive';
 import { useLiveTrips } from '@/features/trips/useLiveTrips';
 import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, totalWaiting, type Trip, type Vehicle } from '@/features/trips/types';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
@@ -66,6 +66,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         <Kpi label="Salidas completadas" value={`${done}/${trips.length}`} tone="text-indigo-600" />
         <Kpi label="Estudiantes en espera" value={waiting} tone="text-cyan-600" wide />
       </section>
+
+      <WaitingByStop trips={trips} />
 
       <section aria-labelledby="mapa" data-tour="mapa">
         <h2 id="mapa" className="section-title">Mapa en vivo</h2>
@@ -181,6 +183,39 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         ]}
       />
     </div>
+  );
+}
+
+/** Por ruta: total en espera y cuántos hay en cada parada (suma de las salidas de hoy). */
+function WaitingByStop({ trips }: { trips: Trip[] }) {
+  const routes = waitingByRoute(trips);
+  if (routes.length === 0) return null;
+  return (
+    <section aria-labelledby="espera-paradas">
+      <h2 id="espera-paradas" className="section-title">Estudiantes en espera por parada</h2>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {routes.map((r) => (
+          <article key={r.routeId} className="card rounded-3xl p-4">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-semibold">{r.name}</h3>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-bold ${r.total > 0 ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-500'}`}>
+                {r.total} en espera
+              </span>
+            </div>
+            <ul className="mt-2 divide-y divide-slate-100 text-sm">
+              {r.stops.map((s) => (
+                <li key={s.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className={s.n > 0 ? 'font-medium' : 'text-slate-500'}>{s.name}</span>
+                  <span className={`min-w-8 rounded-full px-2 py-0.5 text-center text-xs font-bold ${s.n > 0 ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-400'}`}>
+                    {s.n}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 

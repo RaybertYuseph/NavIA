@@ -165,12 +165,15 @@ function TripControls({ trip }: { trip: Trip }) {
             <Icon name={pending > 0 ? 'signal' : 'check'} className="h-3.5 w-3.5" />
             {pending > 0 ? `${pending} por enviar` : 'Todo enviado'}
           </span>
-          {totalAhead > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-800">
-              <Icon name="users" className="h-3.5 w-3.5" /> {totalAhead} esperando adelante
-            </span>
-          )}
         </div>
+        {state.status !== 'finalizada' && state.status !== 'cancelada' && (
+          <p className={`mt-3 flex items-center gap-2 rounded-2xl px-3 py-2.5 font-bold ${totalAhead > 0 ? 'bg-cyan-50 text-cyan-900' : 'bg-slate-50 text-slate-600'}`}>
+            <Icon name="users" className="h-5 w-5" />
+            {totalAhead === 0
+              ? 'Nadie ha marcado su parada todavía'
+              : `${totalAhead} ${totalAhead === 1 ? 'estudiante esperando' : 'estudiantes esperando'} en tu ruta`}
+          </p>
+        )}
       </section>
 
       <div data-tour="accion" className="flex flex-col gap-2">
@@ -182,9 +185,10 @@ function TripControls({ trip }: { trip: Trip }) {
           >
             <span className="block text-sm font-semibold opacity-90">{label.top}</span>
             <span className="block text-3xl leading-tight font-extrabold">{label.main}</span>
-            {action.type === 'en_parada' && waitingAt(action.stop?.id) > 0 && (
+            {action.type === 'en_parada' && (
               <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/25 px-3 py-1 text-sm font-bold">
-                <Icon name="users" className="h-4 w-4" /> {waitingAt(action.stop?.id)} esperando aquí
+                <Icon name="users" className="h-4 w-4" />
+                {waitingAt(action.stop?.id) === 0 ? 'Nadie marcó esta parada' : `${waitingAt(action.stop?.id)} esperando aquí`}
               </span>
             )}
           </button>
@@ -217,8 +221,11 @@ function TripControls({ trip }: { trip: Trip }) {
                   {done ? '✓' : i + 1}
                 </span>
                 <span className={done ? 'text-slate-400 line-through decoration-slate-300' : here || isNext ? 'font-bold' : 'font-medium'}>{s.name}</span>
-                {!done && !here && waitingAt(s.id) > 0 && (
-                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-800">
+                {!done && (
+                  <span
+                    className={`ml-auto inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${waitingAt(s.id) > 0 ? 'bg-cyan-100 text-cyan-800' : 'bg-slate-100 text-slate-400'}`}
+                    aria-label={`${waitingAt(s.id)} esperando`}
+                  >
                     <Icon name="users" className="h-3.5 w-3.5" /> {waitingAt(s.id)}
                   </span>
                 )}
