@@ -20,7 +20,10 @@ export type SceneName =
   | 'fiscal-departures'
   | 'driver-pain'
   | 'driver-qr'
-  | 'driver-wallet';
+  | 'driver-wallet'
+  | 'driver-paypain'
+  | 'student-paypain'
+  | 'student-wallet';
 
 export function TourScene({ name }: { name: SceneName }) {
   const [run, setRun] = useState(0);
@@ -69,6 +72,9 @@ const T = {
   pain: [700, 900, 1100, 900, 1100, 900, 900, 900, 1300],
   qr: [1300, 1300, 2000, 1200, 1300, 2200],
   wallet: [1500, 1500, 1400, 1900],
+  paypain: [1300, 1300, 1300, 1600, 1800],
+  spain: [1300, 1900, 1600, 1500, 1700],
+  swallet: [1500, 1500, 1900, 2000],
 };
 
 /* ───────────────────────── Piezas comunes ───────────────────────── */
@@ -525,7 +531,7 @@ function DriverPain() {
 }
 
 /** Patrón fijo de un código QR de ejemplo (no codifica nada). */
-function FakeQr({ seed }: { seed: number }) {
+function FakeQr({ seed, big = false }: { seed: number; big?: boolean }) {
   const cells = Array.from({ length: 81 }, (_, i) => {
     const r = Math.floor(i / 9);
     const c = i % 9;
@@ -533,7 +539,7 @@ function FakeQr({ seed }: { seed: number }) {
     return finder ? !(r % 6 === 1 && c % 6 === 1) : ((i * 7 + seed * 13) % 5) < 2;
   });
   return (
-    <span className="grid h-24 w-24 grid-cols-9 gap-px rounded-md bg-white p-1.5">
+    <span className={`grid grid-cols-9 gap-px rounded-md bg-white p-1.5 ${big ? 'h-32 w-32' : 'h-24 w-24'}`}>
       {cells.map((on, i) => (
         <span key={i} className={on ? 'bg-ink' : 'bg-white'} />
       ))}
@@ -596,7 +602,7 @@ function DriverWallet() {
         {[
           ['Pasajes', '54'],
           ['Cobrado', '63.720 Bs'],
-          ['Neto', '60.534 Bs'],
+          ['Neto', '62.127 Bs'],
         ].map(([l, v]) => (
           <span key={l} className="rounded-xl bg-white p-1.5 ring-1 ring-slate-200">
             <b className="block text-sm leading-tight">{v}</b>
@@ -615,15 +621,121 @@ function DriverWallet() {
             <b>30.680 Bs</b>
           </li>
           <li className="flex justify-between border-t border-slate-100 pt-1 text-slate-500">
-            <span>Comisión NavIA 5%</span>
-            <span>−3.186 Bs</span>
+            <span>Comisión NavIA 2,5% (tu parte)</span>
+            <span>−1.593 Bs</span>
           </li>
         </ul>
       )}
       {f >= 2 && (
         <span className={`tour-pop btn-primary text-sm ${tap(f === 2)}`}>
-          {f === 2 ? 'Transferir a mi cuenta' : f === 3 ? 'Enviando a tu cuenta ****4821…' : '✓ 60.534 Bs en tu cuenta'}
+          {f === 2 ? 'Transferir a mi cuenta' : f === 3 ? 'Enviando a tu cuenta ****4821…' : '✓ 62.127 Bs en tu cuenta'}
         </span>
+      )}
+    </Phone>
+  );
+}
+
+/* ───────────────────────── El pago hoy y con saldo NavIA ───────────────────────── */
+
+/** Así se paga hoy: datos dictados en la puerta y la app del banco que no carga con poca señal. */
+function StudentPayPain() {
+  const f = useFrames(T.spain);
+  return (
+    <Phone>
+      <p className="tour-pop rounded-2xl bg-white p-2.5 text-sm ring-1 ring-slate-200">
+        <b className="block text-xs text-slate-500">En la puerta de la camioneta</b>
+        {f === 0 ? '—¿Me pasas los datos del pago móvil?' : '—0414 555 12 34, cédula 12.345.678, Banesco… ¿lo anotaste?'}
+      </p>
+      {f >= 2 && (
+        <div className="tour-pop flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl bg-white ring-1 ring-slate-200">
+          <span className="flex items-end gap-0.5" aria-label="Una barra de señal">
+            {[1, 2, 3, 4].map((b) => (
+              <span key={b} className={`w-1.5 rounded-sm ${b === 1 ? 'bg-red-500' : 'bg-slate-200'}`} style={{ height: `${b * 5}px` }} />
+            ))}
+          </span>
+          <b className="text-sm">App del banco</b>
+          <span className={`text-xs ${f >= 3 ? 'font-bold text-red-700' : 'text-slate-500'}`}>
+            {f >= 3 ? 'Tiempo de espera agotado. Intenta de nuevo.' : 'Escaneando el QR del banco… cargando'}
+          </span>
+        </div>
+      )}
+      {f >= 4 && (
+        <p className="tour-pop rounded-xl bg-red-600 p-2.5 text-xs font-semibold text-white shadow-lg">
+          3 compañeros esperan detrás de ti. Pagar así toma de 2 a 4 minutos por estudiante.
+        </p>
+      )}
+    </Phone>
+  );
+}
+
+/** Release 2: el estudiante paga con su saldo NavIA mostrando el QR de la app. */
+function StudentWallet() {
+  const f = useFrames(T.swallet);
+  const saldo = f >= 3 ? '4.690' : '5.900';
+  return (
+    <Phone>
+      <Release2 />
+      <div className="flex items-center justify-between rounded-2xl bg-linear-to-br from-brand-400 to-indigo-500 p-3 text-white shadow-md">
+        <span>
+          <span className="block text-[11px] opacity-90">Saldo NavIA</span>
+          <b key={saldo} className="tour-pop block text-xl leading-tight">{saldo} Bs</b>
+          <span className="text-[10px] opacity-90">{f >= 3 ? 'Te alcanza para 3 pasajes' : 'Te alcanza para 4 pasajes'}</span>
+        </span>
+        <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold">+ Recargar</span>
+      </div>
+      {f === 0 && <span className="btn-primary">Pagar mi pasaje</span>}
+      {f === 1 && <span className={`btn-primary ${tap(true)}`}>Pagar mi pasaje</span>}
+      {f >= 2 && f < 3 && (
+        <div className="tour-pop flex flex-1 flex-col items-center justify-center gap-1">
+          <FakeQr seed={3} big />
+          <span className="text-xs font-semibold text-slate-600">Muéstraselo al conductor · sirve sin señal</span>
+        </div>
+      )}
+      {f >= 3 && (
+        <div className="tour-pop flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-50 p-3 text-center ring-1 ring-emerald-200">
+          <b className="text-lg text-emerald-800">✓ Pasaje pagado</b>
+          <span className="text-xs text-emerald-900">1.210 Bs · AB123CD · 6:31 · en 3 segundos</span>
+          {f >= 4 && <span className="tour-pop mt-1 text-[11px] text-slate-600">Recargas en casa, con buena señal, y en la puerta solo muestras el QR.</span>}
+        </div>
+      )}
+    </Phone>
+  );
+}
+
+/** Así cobra hoy el conductor: capturas por WhatsApp contra movimientos del banco, uno por uno. */
+function DriverPayPain() {
+  const f = useFrames(T.paypain);
+  const moves = [
+    ['6:28', 'Pago móvil 0414-***-12', '1.180,00'],
+    ['6:29', 'Pago móvil 0424-***-87', '1.000,00'],
+    ['6:31', 'Pago móvil 0412-***-55', '1.180,00'],
+    ['6:31', 'Pago móvil 0416-***-03', '1.180,00'],
+  ];
+  return (
+    <Phone>
+      <div className="grid grid-cols-2 gap-2">
+        <span className="rounded-xl bg-[#d9fdd3] p-2 text-[11px] shadow-sm">
+          <b className="block text-[#128c7e]">María</b>📷 Captura · 1.180 Bs · 6:31 «ya te pagué»
+        </span>
+        <span className="rounded-xl bg-[#d9fdd3] p-2 text-[11px] shadow-sm">
+          <b className="block text-[#128c7e]">Pedro</b>📷 Captura · 1.180 Bs · 6:30
+        </span>
+      </div>
+      <div className="flex flex-col gap-1 rounded-2xl bg-white p-2 ring-1 ring-slate-200">
+        <b className="text-xs text-slate-500">Banco · movimientos de hoy</b>
+        {moves.slice(0, Math.min(f + 1, 4)).map(([h, d, a]) => (
+          <span key={h + d} className={`tour-pop flex justify-between text-[11px] ${a !== '1.180,00' ? 'font-bold text-red-700' : ''}`}>
+            <span>
+              {h} · {d}
+            </span>
+            <span>{a}</span>
+          </span>
+        ))}
+      </div>
+      {f >= 4 && (
+        <p className="tour-pop rounded-xl bg-red-600 p-2.5 text-xs font-semibold text-white shadow-lg">
+          28 capturas, 25 pagos en el banco, uno de 1.000 Bs. ¿Quién no pagó? Revisarlo toma la noche entera.
+        </p>
       )}
     </Phone>
   );
@@ -642,4 +754,7 @@ const SCENES: Record<SceneName, () => React.ReactElement> = {
   'driver-pain': DriverPain,
   'driver-qr': DriverQr,
   'driver-wallet': DriverWallet,
+  'driver-paypain': DriverPayPain,
+  'student-paypain': StudentPayPain,
+  'student-wallet': StudentWallet,
 };
