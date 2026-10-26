@@ -115,3 +115,10 @@ select pg_temp.assert((select scheduled_at between now() - interval '1 minute' a
   from trips where id = (select trip from u)), 'sin salida anunciada para la próxima media hora, sale a la hora de activación');
 reset role;
 select pg_temp.assert((select vehicle_id is null from trips where id = (select id from lejana)), 'una salida anunciada para más tarde no se toma antes de tiempo');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
+select pg_temp.assert((select set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', 20) = trip from u),
+  'volver a activarse no crea otra salida');
+select pg_temp.assert((select scheduled_at = date_trunc('minute', now()) + interval '20 minutes' from trips where id = (select trip from u)),
+  '"Salgo en 20 min" corrige la hora de su salida');
+reset role;

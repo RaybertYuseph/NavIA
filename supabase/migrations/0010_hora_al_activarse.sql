@@ -1,17 +1,21 @@
 -- NavIA · corte 2: la hora de salida la pone el conductor al activarse en la parada de salida.
 --
--- set_available_at_stop() toma una salida que el fiscal anunció solo si es para la próxima media
--- hora (o pasó hace menos de 30 min); si no, crea la salida con la hora de activación. La hora
--- real de salida sigue siendo started_at, que queda al tocar "Ya subieron todos".
+-- set_available_at_stop() recibe en cuántos minutos sale el conductor ("Ahora", 10, 20 o 30) y
+-- crea la salida a esa hora. Solo toma una salida que el fiscal anunció si queda a 10 minutos o
+-- menos de esa hora. La hora real de salida sigue siendo started_at ("Ya subieron todos").
 -- reset_demo_today() ya no deja horarios fijos: borra las salidas de hoy (con sus marcas) y el día
 -- empieza vacío, como en la calle. El fiscal puede anunciar una con "Nueva salida".
 
-create or replace function set_available_at_stop(p_vehicle_id uuid, p_route_id uuid) returns uuid
+-- p_depart_in: en cuántos minutos sale ("Ahora" = 0, 10, 20 o 30); sin él, ahora y sin mover una
+-- salida que ya tenga. La versión de 2 parámetros se reemplaza para que las llamadas no sean ambiguas.
+drop function if exists set_available_at_stop(uuid, uuid);
+create or replace function set_available_at_stop(p_vehicle_id uuid, p_route_id uuid, p_depart_in int default null) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
-  op    uuid := my_operator();
-  today date := (now() at time zone 'America/Caracas')::date;
-  trip  uuid;
+  op     uuid := my_operator();
+  today  date := (now() at time zone 'America/Caracas')::date;
+  target timestamptz := date_trunc('minute', now()) + make_interval(mins => greatest(0, least(coalesce(p_depart_in, 0), 120)));
+  trip   uuid;
 begin
   if my_role() is distinct from 'driver' or op is null then
     raise exception 'Solo el conductor se activa disponible' using errcode = '42501';
@@ -23,18 +27,25 @@ begin
     raise exception 'Esa ruta no está disponible' using errcode = '22023';
   end if;
 
-  -- Si ya tiene una salida abierta de hoy con esta unidad, es esa (tocar dos veces no duplica).
+  -- Si ya tiene una salida abierta de hoy con esta unidad, es esa (tocar dos veces no duplica). Si
+  -- todavía no arranca, toma la hora nueva: así el conductor puede corregir "Salgo en…".
   select id into trip from trips
   where driver_id = auth.uid() and vehicle_id = p_vehicle_id and status in ('scheduled', 'en_camino', 'en_parada')
     and (scheduled_at at time zone 'America/Caracas')::date = today
   order by scheduled_at limit 1;
+  if trip is not null and p_depart_in is not null then
+    update trips t set scheduled_at = target
+    where t.id = trip and t.status = 'scheduled' and t.scheduled_at <> target
+      and not exists (select 1 from trip_events e where e.trip_id = t.id)
+      and not exists (select 1 from trips o where o.route_id = t.route_id and o.scheduled_at = target);
+  end if;
 
   if trip is null then
-    -- Una salida anunciada por el fiscal para la próxima media hora: la más cercana a ahora.
+    -- Una salida que el fiscal anunció a 10 minutos o menos de esa hora: se toma con su hora.
     select id into trip from trips
     where route_id = p_route_id and vehicle_id is null and status = 'scheduled'
-      and scheduled_at between now() - interval '30 minutes' and now() + interval '30 minutes'
-    order by abs(extract(epoch from scheduled_at - now()))
+      and scheduled_at between target - interval '10 minutes' and target + interval '10 minutes'
+    order by abs(extract(epoch from scheduled_at - target))
     limit 1
     for update skip locked;
 
@@ -42,14 +53,14 @@ begin
       update trips set vehicle_id = p_vehicle_id, driver_id = auth.uid() where id = trip;
     else
       insert into trips (route_id, vehicle_id, driver_id, scheduled_at)
-      values (p_route_id, p_vehicle_id, auth.uid(), date_trunc('minute', now()))
+      values (p_route_id, p_vehicle_id, auth.uid(), target)
       on conflict (route_id, scheduled_at) do update set vehicle_id = excluded.vehicle_id, driver_id = excluded.driver_id
       where trips.vehicle_id is null
       returning id into trip;
       if trip is null then
-        -- Otro conductor se activó en esa ruta en este mismo minuto: la suya sale un minuto después.
+        -- Otro conductor ya sale a esa hora en esa ruta: la suya queda un minuto después.
         insert into trips (route_id, vehicle_id, driver_id, scheduled_at)
-        values (p_route_id, p_vehicle_id, auth.uid(), date_trunc('minute', now()) + interval '1 minute')
+        values (p_route_id, p_vehicle_id, auth.uid(), target + interval '1 minute')
         returning id into trip;
       end if;
     end if;
@@ -59,6 +70,8 @@ begin
   where id = p_vehicle_id;
   return trip;
 end $$;
+revoke execute on function set_available_at_stop(uuid, uuid, int) from public, anon;
+grant execute on function set_available_at_stop(uuid, uuid, int) to authenticated;
 
 create or replace function reset_demo_today() returns int
 language plpgsql security definer set search_path = public as $$

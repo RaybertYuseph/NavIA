@@ -9,6 +9,7 @@ import { NaviaFab } from '@/features/guide/NaviaFab';
 import { db } from '@/lib/offline/db';
 import { enqueue, onPendingChange, startAutoSync } from '@/lib/offline/sync';
 import { AvailabilityToggle } from './AvailabilityToggle';
+import { ChangeDepartTime } from './DepartTime';
 import { DriverNotices } from './DriverNotices';
 import { AvailableAtStop } from './AvailableAtStop';
 import type { TripEventType } from '@/lib/offline/types';
@@ -200,6 +201,7 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
           </div>
           <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${STATUS_STYLE[state.status]}`}>{STATUS_LABEL[state.status]}</span>
         </div>
+        {state.status === 'scheduled' && <ChangeDepartTime trip={trip} />}
         <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 ${gps === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
             <Icon name="pin" className="h-3.5 w-3.5" /> {GPS_LABEL[gps]}
