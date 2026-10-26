@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { SelectField } from '@/components/SelectField';
 import { Icon } from '@/components/icons';
@@ -134,7 +135,12 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
   const action = primaryAction(state, stops);
   const upcoming = nextStop(stops, state.currentStopId);
   const currentIdx = stops.findIndex((s) => s.id === state.currentStopId);
-  const waiting = useWaiting(trip.id, trip.waiting, state.status !== 'finalizada' && state.status !== 'cancelada');
+  const router = useRouter();
+  // Si el fiscal reinició la demo, esta salida ya no existe: se descarta lo pendiente de enviar
+  // y la consola vuelve a "Estoy disponible".
+  const waiting = useWaiting(trip.id, trip.waiting, state.status !== 'finalizada' && state.status !== 'cancelada', () => {
+    void db.queue.where('trip_id').equals(trip.id).delete().finally(() => router.refresh());
+  });
   const waitingAt = (stopId: string | undefined) => (stopId ? (waiting[stopId] ?? 0) : 0);
   const totalAhead = stops.slice(currentIdx + 1).reduce((a, s) => a + waitingAt(s.id), 0);
 

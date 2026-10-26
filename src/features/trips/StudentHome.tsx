@@ -66,7 +66,7 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
                 </div>
               </div>
             ) : (
-              <Empty text={pending.length ? 'Aún no hay salidas confirmadas. Te aviso apenas un conductor esté en la parada.' : 'Por hoy no quedan salidas. Nos vemos mañana.'} />
+              <Empty text={pending.length ? 'Aún no hay salidas confirmadas. Te aviso apenas un conductor esté en la parada.' : 'Aún no hay salidas. Aparecen apenas un conductor esté en la parada de salida.'} />
             )}
             {pending.length > 0 && (
               <ul className="mt-2 flex flex-wrap gap-2" aria-label="Salidas por confirmar">

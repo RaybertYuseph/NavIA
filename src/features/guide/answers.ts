@@ -18,7 +18,7 @@ export function studentTip(live: Trip[], next: Trip | null, now: number, pending
   if (live.length > 0) return `¡Epa! Tengo ${live.length === 1 ? '1 camioneta' : `${live.length} camionetas`} en camino. Marca tu parada y te aviso cuando llegue.`;
   if (next) return `¡Epa! Tu próxima salida es a las ${formatHour(next.scheduled_at)}. ${minutesUntil(next.scheduled_at, now)}.`;
   if (pending) return `¡Epa! La salida de las ${formatHour(pending.scheduled_at)} está por confirmar unidad. Te aviso apenas un conductor esté en la parada.`;
-  return '¡Epa! Por hoy no quedan salidas. Nos vemos mañana, pana.';
+  return '¡Epa! Aún no hay salidas. Te aviso apenas un conductor esté en la parada de salida.';
 }
 
 export function whereIsBus(live: Trip[], next: Trip | null, now: number): NaviaAnswer {
@@ -39,7 +39,7 @@ export function whereIsBus(live: Trip[], next: Trip | null, now: number): NaviaA
 }
 
 export function whenNext(next: Trip | null, now: number): NaviaAnswer {
-  if (!next) return { text: 'Por hoy no quedan salidas programadas.', tab: 'horarios', actionLabel: 'Ver los horarios' };
+  if (!next) return { text: 'Aún no hay salidas. Aparecen apenas un conductor esté en la parada de salida.', tab: 'horarios', actionLabel: 'Ver los horarios' };
   return {
     text:
       new Date(next.scheduled_at).getTime() <= now
