@@ -23,23 +23,22 @@ function markViewSeen(view: View): View[] {
 }
 
 /**
- * Cierre del tour en un enlace de demo: pide la encuesta de ese público y, en el de conductor y
- * fiscal, ofrece pasar a la otra vista antes de responder.
+ * Cierre del tour en un enlace de demo: invita a la encuesta de ese público y, en el de conductor
+ * y fiscal, ofrece pasar a la otra vista antes de responder.
  */
-export function DemoSurveyCard({ view, audience, onClose }: { view: View; audience: Audience; onClose: () => void }) {
+export function DemoSurveyCard(props: { view: View; audience: Audience; onAnswer: () => void; onClose: () => void }) {
+  const { view, audience, onAnswer, onClose } = props;
   const router = useRouter();
   const [seen] = useState(() => markViewSeen(view));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { survey, views } = AUDIENCES[audience];
+  const { views } = AUDIENCES[audience];
   const other = views.find((v) => v !== view && !seen.includes(v));
   const otherRole = other ? DEMO_ROLES[other] : null;
 
   const text = otherRole
     ? `¡Eso es todo por aquí! ¿Te muestro ahora la vista del ${otherRole.title.toLowerCase()}?`
-    : survey
-      ? '¡Listo! ¿Me regalas 2 minutos? Con tu opinión decidimos cómo llega NavIA a la ruta.'
-      : '¡Listo! Gracias por recorrer NavIA conmigo.';
+    : '¡Listo! ¿Me regalas un minuto? Son 7 preguntas y con tu opinión decidimos cómo llega NavIA a la ruta.';
   const { shown, done, skip } = useTypewriter(text);
 
   async function goOther() {
@@ -56,10 +55,10 @@ export function DemoSurveyCard({ view, audience, onClose }: { view: View; audien
     router.refresh();
   }
 
-  const surveyLink = survey && (
-    <a href={survey} target="_blank" rel="noopener noreferrer" onClick={onClose} className={otherRole ? 'btn-ghost' : 'btn-primary'}>
-      Responder la encuesta
-    </a>
+  const answer = (
+    <button type="button" autoFocus={!otherRole} onClick={onAnswer} className={otherRole ? 'btn-ghost' : 'btn-primary'}>
+      {otherRole ? 'Responder la encuesta ya' : 'Responder (7 preguntas)'}
+    </button>
   );
 
   return (
@@ -76,9 +75,9 @@ export function DemoSurveyCard({ view, audience, onClose }: { view: View; audien
               {busy ? 'Cambiando…' : `Ver la vista del ${otherRole.title.toLowerCase()}`}
             </button>
           )}
-          {surveyLink}
+          {answer}
           <button type="button" onClick={onClose} className="btn-ghost">
-            {survey ? 'Ahora no' : 'Cerrar'}
+            Ahora no
           </button>
         </div>
         <FormError message={error} />

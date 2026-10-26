@@ -4,7 +4,8 @@ import type { View } from '@/features/guide/tours';
 
 /**
  * Accesos de la demo. /login muestra los tres roles (presentación); cada enlace de
- * /demo/<audiencia> muestra solo los suyos y termina el tour con su propia encuesta.
+ * /demo/<audiencia> muestra solo los suyos y termina el tour con su propia encuesta
+ * (preguntas en features/guide/surveys.ts).
  */
 export type DemoRole = { email: string; view: View; title: string; detail: string; icon: IconName; color: string };
 
@@ -16,16 +17,14 @@ export const DEMO_ROLES: Record<View, DemoRole> = {
 
 export type Audience = 'estudiante' | 'conductor-fiscal';
 
-export const AUDIENCES: Record<Audience, { views: View[]; intro: string; survey: string | undefined }> = {
+export const AUDIENCES: Record<Audience, { views: View[]; intro: string }> = {
   estudiante: {
     views: ['student'],
     intro: 'Entra como estudiante y te enseño en 3 minutos cómo saber dónde viene tu camioneta.',
-    survey: process.env.NEXT_PUBLIC_ENCUESTA_ESTUDIANTE_URL?.trim() || undefined,
   },
   'conductor-fiscal': {
     views: ['driver', 'fiscal'],
     intro: 'Mira cómo se ve la línea desde el volante y desde la oficina del fiscal.',
-    survey: process.env.NEXT_PUBLIC_ENCUESTA_CONDUCTOR_FISCAL_URL?.trim() || undefined,
   },
 };
 
