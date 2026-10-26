@@ -14,10 +14,9 @@ export function minutesUntil(iso: string, now: number) {
 
 // ── Estudiante ──────────────────────────────────────────────────────────────
 
-export function studentTip(live: Trip[], next: Trip | null, now: number, pending: Trip | null = null) {
+export function studentTip(live: Trip[], next: Trip | null, now: number) {
   if (live.length > 0) return `¡Epa! Tengo ${live.length === 1 ? '1 camioneta' : `${live.length} camionetas`} en camino. Marca tu parada y te aviso cuando llegue.`;
   if (next) return `¡Epa! Tu próxima salida es a las ${formatHour(next.scheduled_at)}. ${minutesUntil(next.scheduled_at, now)}.`;
-  if (pending) return `¡Epa! La salida de las ${formatHour(pending.scheduled_at)} está por confirmar unidad. Te aviso apenas un conductor esté en la parada.`;
   return '¡Epa! Aún no hay salidas. Te aviso apenas un conductor esté en la parada de salida.';
 }
 

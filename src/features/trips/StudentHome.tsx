@@ -14,7 +14,7 @@ import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { formatHour, timeAgo } from '@/lib/time';
 import { useLiveTrips } from './useLiveTrips';
 import { WaitAtStop } from './WaitAtStop';
-import { atStartStop, groupByRoute, nextDeparture, pendingDepartures, stopsForMap } from './derive';
+import { atStartStop, groupByRoute, nextDeparture, stopsForMap } from './derive';
 import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, sortedStops, type Trip } from './types';
 
 const STALE_MS = 5 * 60_000;
@@ -28,8 +28,7 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
   const selected = live.find((t) => t.id === selectedId) ?? live[0] ?? null;
   const demo = process.env.NEXT_PUBLIC_DEMO === '1';
   const next = nextDeparture(trips, now, demo);
-  const pending = pendingDepartures(trips, now, demo);
-  const tip = studentTip(live, next, now, pending[0] ?? null);
+  const tip = studentTip(live, next, now);
 
   return (
     <div className="flex flex-col gap-5">
@@ -66,16 +65,7 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
                 </div>
               </div>
             ) : (
-              <Empty text={pending.length ? 'Aún no hay salidas confirmadas. Te aviso apenas un conductor esté en la parada.' : 'Aún no hay salidas. Aparecen apenas un conductor esté en la parada de salida.'} />
-            )}
-            {pending.length > 0 && (
-              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Salidas por confirmar">
-                {pending.slice(0, 4).map((t) => (
-                  <li key={t.id} className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-800 ring-1 ring-amber-100">
-                    {formatHour(t.scheduled_at)} · por confirmar unidad
-                  </li>
-                ))}
-              </ul>
+              <Empty text="Aún no hay salidas. Aparecen apenas un conductor esté en la parada de salida." />
             )}
           </section>
 
@@ -129,8 +119,9 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
 
       {tab === 'horarios' && (
         <section aria-labelledby="rutas">
-          <h2 id="rutas" className="section-title">Rutas y horarios de hoy</h2>
-          <RoutesSchedule trips={trips} />
+          <h2 id="rutas" className="section-title">Salidas confirmadas de hoy</h2>
+          {/* Solo las que un conductor confirmó (con unidad) y no han terminado: no hay horario fijo. */}
+          <RoutesSchedule trips={trips.filter((t) => t.vehicle_id && (t.status === 'scheduled' || isLive(t)))} />
           {comingSoon.length > 0 && (
             <div className="card mt-3 rounded-3xl p-4">
               <h3 className="font-bold">Próximamente</h3>
@@ -206,7 +197,7 @@ function LiveTripCard({ trip, now, selected, onSelect }: { trip: Trip; now: numb
 
 function RoutesSchedule({ trips }: { trips: Trip[] }) {
   const routes = useMemo(() => groupByRoute(trips), [trips]);
-  if (routes.length === 0) return <Empty text="Hoy no hay salidas programadas." />;
+  if (routes.length === 0) return <Empty text="Sin salidas confirmadas por ahora. Aparecen apenas un conductor esté en la parada de salida." />;
   return (
     <div className="flex flex-col gap-3">
       {routes.map(({ route, trips: rt }) => {
@@ -225,8 +216,6 @@ function RoutesSchedule({ trips }: { trips: Trip[] }) {
                 <li key={t.id} className={`rounded-xl px-2.5 py-1 text-sm font-semibold ${STATUS_STYLE[t.status]}`} title={STATUS_LABEL[t.status]}>
                   {formatHour(t.scheduled_at)}
                   {isLive(t) && ' · en camino'}
-                  {t.status === 'scheduled' && !t.vehicle_id && ' · por confirmar'}
-                  {t.status === 'finalizada' && ' ✓'}
                 </li>
               ))}
             </ul>
