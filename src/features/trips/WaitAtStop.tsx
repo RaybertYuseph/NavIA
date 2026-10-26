@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { distanceM } from '@/lib/geo';
 import { createClient } from '@/lib/supabase/client';
 import { formatHour } from '@/lib/time';
@@ -20,9 +20,17 @@ const NO_FIX = 'No pude obtener tu ubicación. Revisa que el GPS esté encendido
 function locate() {
   return new Promise<Point>((resolve, reject) => {
     if (!('geolocation' in navigator)) return reject(new Error('sin_gps'));
+    // Tope propio: el timeout del navegador no corre mientras el aviso de permiso sigue abierto.
+    const giveUp = setTimeout(() => reject(new Error('sin_respuesta')), 15_000);
     navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      reject,
+      (p) => {
+        clearTimeout(giveUp);
+        resolve({ lat: p.coords.latitude, lng: p.coords.longitude });
+      },
+      (e) => {
+        clearTimeout(giveUp);
+        reject(e);
+      },
       { enableHighAccuracy: true, timeout: 12_000, maximumAge: 15_000 },
     );
   });
@@ -44,6 +52,8 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
   const [stopId, setStopId] = useState<string>('');
   const [busy, setBusy] = useState<false | 'gps' | 'save'>(false);
   const [error, setError] = useState<string | null>(null);
+  /** Cada búsqueda de GPS tiene un número; si llega una más nueva (o "Simular"), la vieja se ignora. */
+  const search = useRef(0);
 
   useEffect(() => {
     const ids = trips.map((t) => t.id);
@@ -98,15 +108,18 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
   /** Marca la parada si el GPS confirma que el estudiante está a 50 m o menos. */
   async function markHere(stop: Point & { id: string }) {
     if (!trip) return;
+    const mine = ++search.current;
     setBusy('gps');
     setError(null);
     let at: Point;
     try {
       at = await locate();
     } catch (e) {
+      if (mine !== search.current) return;
       setBusy(false);
       return setError((e as GeolocationPositionError).code === 1 ? NO_PERMISSION : NO_FIX);
     }
+    if (mine !== search.current) return;
     const d = distanceM(at, stop);
     if (d > RANGE_M) {
       setBusy(false);
@@ -235,8 +248,12 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         {DEMO && (
           <button
             type="button"
-            disabled={!!busy || !chosen}
-            onClick={() => chosen && void save({ trip_id: trip.id, stop_id: chosen.id }, chosen)}
+            disabled={busy === 'save' || !chosen}
+            onClick={() => {
+              if (!chosen) return;
+              search.current++; // cancela la búsqueda de GPS en curso
+              void save({ trip_id: trip.id, stop_id: chosen.id }, chosen);
+            }}
             className="btn-ghost text-sm disabled:opacity-50"
           >
             Simular que estoy en la parada (demo)
