@@ -17,7 +17,10 @@ export type SceneName =
   | 'driver-route'
   | 'driver-offline'
   | 'fiscal-live'
-  | 'fiscal-departures';
+  | 'fiscal-departures'
+  | 'driver-pain'
+  | 'driver-qr'
+  | 'driver-wallet';
 
 export function TourScene({ name }: { name: SceneName }) {
   const [run, setRun] = useState(0);
@@ -63,6 +66,9 @@ const T = {
   offline: [1400, 1700, 1700],
   fiscal: [1600, 1900, 1900],
   departures: [1600, 1600, 2200, 2000],
+  pain: [700, 900, 1100, 900, 1100, 900, 900, 900, 1300],
+  qr: [1300, 1300, 2000, 1200, 1300, 2200],
+  wallet: [1500, 1500, 1400, 1900],
 };
 
 /* ───────────────────────── Piezas comunes ───────────────────────── */
@@ -467,6 +473,162 @@ function FiscalDepartures() {
   );
 }
 
+/* ───────────────────────── Conductor: hoy y release 2 ───────────────────────── */
+
+const GROUP = [
+  { who: 'Ana', text: '¿Ya salió la de las 6:30?' },
+  { who: 'José', text: '¿Dónde vienes??' },
+  { who: 'me', text: '🎤 0:07 · Voy saliendo de Castillejo' },
+  { who: 'Luis', text: '¿Pasaste por Unefa? Estoy ahí' },
+  { who: 'María', text: '📷 Captura · Te hice el pago móvil, ¿te llegó?' },
+  { who: 'Pedro', text: 'Yo también te pagué 👆' },
+  { who: 'Ana', text: '¿Cuánto falta para Trapichito?' },
+  { who: 'Carla', text: '¿Ya pasaste?? 😡' },
+];
+
+/** Así es hoy: el grupo de WhatsApp de la ruta mientras el conductor maneja. */
+function DriverPain() {
+  const f = useFrames(T.pain);
+  const shown = GROUP.slice(0, Math.min(f + 1, GROUP.length));
+  return (
+    <div className="absolute inset-0 flex flex-col bg-[#efeae2]">
+      <div className="flex items-center gap-2 bg-[#075e54] px-3 py-2 text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20">
+          <Icon name="users" className="h-4 w-4" />
+        </span>
+        <span className="flex-1 text-sm leading-tight font-bold">
+          Ruta Guatire → USM 🚌
+          <span className="block text-[10px] font-normal opacity-80">48 participantes</span>
+        </span>
+        <span key={shown.length} className="tour-pop rounded-full bg-[#25d366] px-2 py-0.5 text-[11px] font-bold">
+          {12 + shown.length * 3} sin leer
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col justify-end gap-1 overflow-hidden px-2 pb-10">
+        {shown.slice(-6).map((m) => (
+          <p
+            key={`${m.who}${m.text}`}
+            className={`tour-pop max-w-[82%] rounded-lg px-2 py-1 text-xs shadow-sm ${m.who === 'me' ? 'self-end bg-[#d9fdd3]' : 'self-start bg-white'}`}
+          >
+            {m.who !== 'me' && <b className="block text-[10px] text-[#128c7e]">{m.who}</b>}
+            {m.text}
+          </p>
+        ))}
+      </div>
+      {f >= 9 && (
+        <p className="tour-pop absolute inset-x-2 bottom-10 rounded-xl bg-red-600 p-2.5 text-xs font-semibold text-white shadow-lg">
+          Mientras maneja: responde dónde viene y cuál es la próxima parada, y revisa los pagos móviles uno por uno en el banco.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Patrón fijo de un código QR de ejemplo (no codifica nada). */
+function FakeQr({ seed }: { seed: number }) {
+  const cells = Array.from({ length: 81 }, (_, i) => {
+    const r = Math.floor(i / 9);
+    const c = i % 9;
+    const finder = (r < 3 && c < 3) || (r < 3 && c > 5) || (r > 5 && c < 3);
+    return finder ? !(r % 6 === 1 && c % 6 === 1) : ((i * 7 + seed * 13) % 5) < 2;
+  });
+  return (
+    <span className="grid h-24 w-24 grid-cols-9 gap-px rounded-md bg-white p-1.5">
+      {cells.map((on, i) => (
+        <span key={i} className={on ? 'bg-ink' : 'bg-white'} />
+      ))}
+    </span>
+  );
+}
+
+function Release2() {
+  return <span className="absolute bottom-2 left-2 z-10 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200">Release 2 · simulación</span>;
+}
+
+/** Release 2: el conductor escanea el QR del estudiante y ve al instante si el pasaje está pago. */
+function DriverQr() {
+  const f = useFrames(T.qr);
+  const second = f >= 3;
+  const result = f === 2 ? 'ok' : f >= 5 ? 'used' : null;
+  const count = f >= 2 ? 13 : 12;
+  return (
+    <Phone>
+      <Release2 />
+      <div className="flex items-center justify-between text-xs">
+        <b className="text-sm">Cobrar pasaje</b>
+        <span key={count} className="tour-pop rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800">
+          Hoy: {count} pasajes
+        </span>
+      </div>
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-2xl bg-ink">
+        <span className="absolute inset-6 rounded-xl border-2 border-dashed border-white/40" />
+        {f >= 1 && f !== 3 && <FakeQr key={second ? 2 : 1} seed={second ? 2 : 1} />}
+        {(f === 1 || f === 4) && <span className="absolute inset-x-10 top-1/2 h-0.5 animate-pulse bg-brand-300 shadow-[0_0_12px_2px] shadow-brand-300" />}
+        {(f === 0 || f === 3) && <span className="text-xs text-white/70">Apunta al QR del estudiante</span>}
+        {result && (
+          <span
+            className={`tour-pop absolute inset-x-3 bottom-3 rounded-xl p-2.5 text-xs text-white shadow-lg ${result === 'ok' ? 'bg-emerald-600' : 'bg-red-600'}`}
+          >
+            {result === 'ok' ? (
+              <>
+                <b className="block text-sm">✓ Pasaje cobrado · 1.180 Bs</b>Andrea M. · paquete semanal, le quedan 7 pasajes
+              </>
+            ) : (
+              <>
+                <b className="block text-sm">✗ Este QR ya se usó hoy a las 6:32</b>No cobres dos veces: pídele su propio QR o pago móvil.
+              </>
+            )}
+          </span>
+        )}
+      </div>
+    </Phone>
+  );
+}
+
+/** Release 2: cierre del día del conductor con pasajes, total, comisión y paso a su cuenta. */
+function DriverWallet() {
+  const f = useFrames(T.wallet);
+  return (
+    <Phone>
+      <Release2 />
+      <b className="text-sm">Cierre del día · lun 26 oct</b>
+      <div className="grid grid-cols-3 gap-1.5 text-center">
+        {[
+          ['Pasajes', '54'],
+          ['Cobrado', '63.720 Bs'],
+          ['Neto', '60.534 Bs'],
+        ].map(([l, v]) => (
+          <span key={l} className="rounded-xl bg-white p-1.5 ring-1 ring-slate-200">
+            <b className="block text-sm leading-tight">{v}</b>
+            <span className="text-[10px] text-slate-500">{l}</span>
+          </span>
+        ))}
+      </div>
+      {f >= 1 && (
+        <ul className="tour-pop flex flex-col gap-1 rounded-xl bg-white p-2 text-xs ring-1 ring-slate-200">
+          <li className="flex justify-between">
+            <span>6:30 · Guatire → USM · 28 pasajes</span>
+            <b>33.040 Bs</b>
+          </li>
+          <li className="flex justify-between">
+            <span>10:30 · Guatire → USM · 26 pasajes</span>
+            <b>30.680 Bs</b>
+          </li>
+          <li className="flex justify-between border-t border-slate-100 pt-1 text-slate-500">
+            <span>Comisión NavIA 5%</span>
+            <span>−3.186 Bs</span>
+          </li>
+        </ul>
+      )}
+      {f >= 2 && (
+        <span className={`tour-pop btn-primary text-sm ${tap(f === 2)}`}>
+          {f === 2 ? 'Transferir a mi cuenta' : f === 3 ? 'Enviando a tu cuenta ****4821…' : '✓ 60.534 Bs en tu cuenta'}
+        </span>
+      )}
+    </Phone>
+  );
+}
+
 const SCENES: Record<SceneName, () => React.ReactElement> = {
   'student-mark': StudentMark,
   'student-approach': StudentApproach,
@@ -477,4 +639,7 @@ const SCENES: Record<SceneName, () => React.ReactElement> = {
   'driver-offline': DriverOffline,
   'fiscal-live': FiscalLive,
   'fiscal-departures': FiscalDepartures,
+  'driver-pain': DriverPain,
+  'driver-qr': DriverQr,
+  'driver-wallet': DriverWallet,
 };
