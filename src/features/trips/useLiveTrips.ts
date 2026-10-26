@@ -14,6 +14,8 @@ const POLL_MS = 10_000;
  */
 export function useLiveTrips(initial: Trip[]) {
   const [trips, setTrips] = useState(initial);
+  // Datos nuevos del servidor (router.refresh, por ejemplo tras simular la demo): se adoptan sin esperar al Realtime.
+  useEffect(() => setTrips(initial), [initial]);
   const current = useRef(trips);
   current.current = trips;
   const [now, setNow] = useState(() => Date.now());

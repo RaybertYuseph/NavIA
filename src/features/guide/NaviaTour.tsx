@@ -211,7 +211,8 @@ export function NaviaTour(props: {
   const isLast = i === steps.length - 1;
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="tour-title">
-      {box ? (
+      {/* En el paso del botón de NavIA el botón está oculto (la NavIA del tour se para ahí): sin recuadro vacío. */}
+      {box && step?.target !== 'navia-fab' ? (
         <div
           className="pointer-events-none fixed rounded-3xl ring-4 ring-brand-300 transition-all duration-500"
           style={{ ...box, boxShadow: '0 0 0 9999px rgb(11 27 58 / 0.55)' }}

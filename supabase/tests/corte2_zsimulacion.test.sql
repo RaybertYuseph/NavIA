@@ -24,7 +24,7 @@ select pg_temp.assert(simulate_demo_day() = 0, 'simular dos veces no duplica');
 reset role;
 select pg_temp.assert((select count(*) = 1 from trips where simulated and status = 'en_camino' and last_lat is not null),
   'una unidad va en camino con ubicación');
-select pg_temp.assert((select count(*) = 1 from trips where simulated and status = 'en_parada' and last_lat is not null),
+select pg_temp.assert((select count(*) = 1 from trips where simulated and status = 'en_parada' and last_lat is not null and started_at is null),
   'otra carga en la parada de salida');
 select pg_temp.assert((select count(*) = 1 from trips where simulated and driver_id = '00000000-0000-0000-0000-0000000000d1' and status = 'scheduled'),
   'el conductor de la demo tiene su salida confirmada');
@@ -32,7 +32,8 @@ select pg_temp.assert((select available from vehicles v join trips t on t.vehicl
   'la unidad en camino figura en ruta');
 
 -- Pasan 20 minutos: las simuladas llegan al final de su ruta.
-update trips set started_at = started_at - interval '20 minutes' where simulated and driver_id is null;
+update trips set started_at = started_at - interval '20 minutes', scheduled_at = scheduled_at - interval '20 minutes'
+where simulated and driver_id is null;
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e1', false);
 select demo_tick();

@@ -5,7 +5,7 @@ import { distanceM } from '@/lib/geo';
 import { createClient } from '@/lib/supabase/client';
 import { formatHour } from '@/lib/time';
 import { pendingStops } from './derive';
-import { isLive, sortedStops, type Trip } from './types';
+import { isLive, liveLabel, sortedStops, type Trip } from './types';
 
 type MyWait = { trip_id: string; stop_id: string };
 type Point = { lat: number; lng: number };
@@ -200,7 +200,7 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         <SelectField
           label="Salida"
           value={trip.id}
-          options={open.map((t) => ({ value: t.id, label: `${formatHour(t.scheduled_at)} · ${t.routes?.name ?? ''}${isLive(t) ? ' · en camino' : ''}` }))}
+          options={open.map((t) => ({ value: t.id, label: `${formatHour(t.scheduled_at)} · ${t.routes?.name ?? ''}${isLive(t) ? ` · ${liveLabel(t)}` : ''}` }))}
           onChange={(id) => {
             setTripId(id);
             setStopId('');

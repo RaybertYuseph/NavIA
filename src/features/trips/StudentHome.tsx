@@ -15,7 +15,7 @@ import { formatHour, timeAgo } from '@/lib/time';
 import { useLiveTrips } from './useLiveTrips';
 import { WaitAtStop } from './WaitAtStop';
 import { atStartStop, groupByRoute, nextDeparture, stopsForMap } from './derive';
-import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, sortedStops, type Trip } from './types';
+import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, liveLabel, sortedStops, type Trip } from './types';
 
 const STALE_MS = 5 * 60_000;
 
@@ -188,7 +188,7 @@ function LiveTripCard({ trip, now, selected, onSelect }: { trip: Trip; now: numb
           {trip.status === 'en_parada' && here ? `Cargando en ${here.name}` : upcoming ? `Va hacia ${upcoming.name}` : 'Llegando a destino'}
         </p>
         <p className="mt-0.5 text-xs text-slate-500">
-          Salió {formatHour(trip.started_at ?? trip.scheduled_at)} · ubicación {timeAgo(trip.last_seen_at, now)}
+          {trip.started_at ? `Salió ${formatHour(trip.started_at)}` : `Sale ${formatHour(trip.scheduled_at)}`} · ubicación {timeAgo(trip.last_seen_at, now)}
         </p>
       </div>
     </button>
@@ -215,7 +215,7 @@ function RoutesSchedule({ trips }: { trips: Trip[] }) {
               {rt.map((t) => (
                 <li key={t.id} className={`rounded-xl px-2.5 py-1 text-sm font-semibold ${STATUS_STYLE[t.status]}`} title={STATUS_LABEL[t.status]}>
                   {formatHour(t.scheduled_at)}
-                  {isLive(t) && ' · en camino'}
+                  {isLive(t) && ` · ${liveLabel(t)}`}
                 </li>
               ))}
             </ul>

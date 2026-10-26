@@ -82,6 +82,11 @@ export function isLive(t: Pick<Trip, 'status'>) {
   return t.status === 'en_camino' || t.status === 'en_parada';
 }
 
+/** "cargando en la salida" mientras está en la primera parada; si no, "en camino". Solo para salidas en vivo. */
+export function liveLabel(trip: Trip) {
+  return trip.status === 'en_parada' && trip.current_stop_id === sortedStops(trip)[0]?.id ? 'cargando en la salida' : 'en camino';
+}
+
 export function currentStop(trip: Trip) {
   return sortedStops(trip).find((s) => s.id === trip.current_stop_id) ?? null;
 }

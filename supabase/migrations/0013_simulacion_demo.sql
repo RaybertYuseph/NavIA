@@ -72,12 +72,12 @@ begin
     n := n + 1;
   end if;
 
-  -- 2) Cargando en la parada de salida; arranca en 3 minutos.
+  -- 2) Cargando en la parada de salida; arranca a su hora (en 3 minutos).
   if coalesce(array_length(others, 1), 0) >= 2 then
     r := coalesce((select route_id from vehicles where id = others[2] and route_id = any (rts)), rts[least(3, array_length(rts, 1))]);
     if r = r_mine and array_length(rts, 1) > 1 then r := (select x from unnest(rts) x where x <> r_mine limit 1); end if;
     insert into trips (route_id, vehicle_id, scheduled_at, status, started_at, simulated)
-    values (r, others[2], base + interval '3 minutes' + interval '13 seconds', 'en_parada', now() + interval '180 seconds', true)
+    values (r, others[2], base + interval '3 minutes' + interval '13 seconds', 'en_parada', null, true)
     returning id into trip;
     update trips set waiting = (
       select coalesce(jsonb_object_agg(st.id::text, 2), '{}'::jsonb)
@@ -134,7 +134,8 @@ begin
     select array_agg(x order by x.seq) into st from stops x where x.route_id = t.route_id;
     k := coalesce(array_length(st, 1), 0);
     if k < 2 then continue; end if;
-    el := extract(epoch from now() - t.started_at);
+    -- La que carga en la salida arranca a su hora: hasta entonces no tiene started_at.
+    el := extract(epoch from now() - coalesce(t.started_at, t.scheduled_at));
     if el < 90 * (k - 1) then
       update vehicles set available = true, available_at = coalesce(available_at, now()),
                           available_route_id = t.route_id
@@ -152,16 +153,16 @@ begin
         insert into stop_visits (trip_id, stop_id, arrived_at, departed_at, source)
         select t.id, s.id, now(), now(), 'manual' from unnest(st) s
         on conflict do nothing;
-        update trips set status = 'finalizada', current_stop_id = st[k].id, last_lat = st[k].lat, last_lng = st[k].lng,
+        update trips set status = 'finalizada', started_at = coalesce(started_at, scheduled_at), current_stop_id = st[k].id, last_lat = st[k].lat, last_lng = st[k].lng,
                          last_seen_at = now(), ended_at = now(), waiting = '{}'::jsonb
         where id = t.id;
       else
         insert into stop_visits (trip_id, stop_id, arrived_at, departed_at, source)
-        select t.id, s.id, t.started_at + (s.seq - st[1].seq) * interval '90 seconds',
-               t.started_at + (s.seq - st[1].seq) * interval '90 seconds', 'manual'
+        select t.id, s.id, coalesce(t.started_at, t.scheduled_at) + (s.seq - st[1].seq) * interval '90 seconds',
+               coalesce(t.started_at, t.scheduled_at) + (s.seq - st[1].seq) * interval '90 seconds', 'manual'
         from unnest(st[1:idx]) s
         on conflict do nothing;
-        update trips set status = 'en_camino', current_stop_id = st[idx].id,
+        update trips set status = 'en_camino', started_at = coalesce(started_at, scheduled_at), current_stop_id = st[idx].id,
                          last_lat = st[idx].lat + (st[idx + 1].lat - st[idx].lat) * frac,
                          last_lng = st[idx].lng + (st[idx + 1].lng - st[idx].lng) * frac,
                          last_seen_at = now(),
