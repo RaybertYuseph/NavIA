@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/icons';
+import { forgetDemoTour } from '@/features/guide/demoSim';
 import { FormError } from './FormError';
 
 /**
@@ -43,6 +44,8 @@ export function DemoLogin() {
       // El detalle permite saber si es la contraseña, la clave de Supabase o la red.
       return setError(`No se pudo entrar a la demo: ${message}`);
     }
+    // Cada entrada a un rol de la demo vuelve a ofrecer el tour (no al recargar dentro del rol).
+    forgetDemoTour();
     router.replace('/');
     router.refresh();
   }

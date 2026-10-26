@@ -19,6 +19,15 @@ export async function startDemoSimulation(): Promise<number | null> {
   }
 }
 
+/** Borra la marca de "tour visto" de esta pestaña: la próxima vista que se abra lo vuelve a ofrecer. */
+export function forgetDemoTour() {
+  try {
+    for (const key of Object.keys(sessionStorage)) if (key.startsWith('navia:tour:')) sessionStorage.removeItem(key);
+  } catch {
+    /* sin almacenamiento: el tour ya se ofrece siempre */
+  }
+}
+
 /** En la demo, mueve las salidas simuladas mientras la pantalla está a la vista. */
 export function DemoTicker() {
   useEffect(() => {
