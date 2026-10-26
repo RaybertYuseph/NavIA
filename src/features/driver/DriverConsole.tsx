@@ -193,7 +193,8 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
         {action && label && (
           <ol className="flex items-center gap-1.5 px-1 text-xs font-bold" aria-label="Paso actual">
             {PHASES.map((p, i) => {
-              const phase = driverPhase(state.status);
+              // En la última parada, con "Terminar ruta" por delante, los tres pasos quedan hechos.
+              const phase = action.type === 'fin_de_ruta' ? PHASES.length : driverPhase(state.status);
               const now = i === phase;
               const done = i < phase;
               return (
@@ -294,6 +295,7 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
       {active && <p className="text-center text-xs text-slate-500">Deja el teléfono en el soporte, con la pantalla encendida y cargando.</p>}
 
       <NaviaFab
+        inline
         tip={driverTip(state.status, upcoming)}
         questions={[
           { q: '¿Qué hago ahora?', answer: () => ({ text: driverTip(state.status, upcoming) }) },

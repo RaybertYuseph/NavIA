@@ -15,7 +15,11 @@ type Msg = { from: 'navia' | 'me'; text: string; tab?: string; actionLabel?: str
  * preguntas frecuentes de la vista. Las respuestas salen de los datos en vivo de la pantalla y
  * NavIA las va diciendo (mueve la boca mientras se escriben; sonríe si empiezan con "¡").
  */
-export function NaviaFab({ tip, questions, raised = false }: { tip: string; questions: NaviaQuestion[]; raised?: boolean }) {
+/**
+ * `inline`: en vez de flotar, va como una fila al final de la vista (el conductor tiene botones
+ * grandes en toda la pantalla y una gota flotante los taparía).
+ */
+export function NaviaFab({ tip, questions, raised = false, inline = false }: { tip: string; questions: NaviaQuestion[]; raised?: boolean; inline?: boolean }) {
   const { setTab, startTour, touring } = useGuide();
   const [open, setOpen] = useState(false);
   const [log, setLog] = useState<Msg[]>([]);
@@ -70,6 +74,16 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
 
   return (
     <>
+      {inline ? (
+        <button type="button" data-tour="navia-fab" onClick={show} aria-label="Hablar con NavIA" className="card flex w-full items-center gap-3 rounded-3xl p-3 text-left transition active:scale-[0.99]">
+          <NaviaAgent size={48} animated compact className="shrink-0" />
+          <span className="flex-1">
+            <span className="block font-bold">¿Dudas? Pregúntame</span>
+            <span className="text-sm text-slate-600">Qué hago ahora, cuántos me esperan, qué pasa sin señal</span>
+          </span>
+          <Icon name="chevron" className="h-5 w-5 text-slate-400" />
+        </button>
+      ) : (
       <button
         type="button"
         data-tour="navia-fab"
@@ -85,6 +99,7 @@ export function NaviaFab({ tip, questions, raised = false }: { tip: string; ques
         )}
         <NaviaAgent size={60} animated mood={hint ? 'happy' : 'idle'} className="drop-shadow-[0_10px_14px_rgb(14_116_233/0.35)]" />
       </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-end sm:justify-end sm:p-6" role="dialog" aria-modal="true" aria-label="NavIA">
