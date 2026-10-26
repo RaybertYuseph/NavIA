@@ -80,6 +80,7 @@ supabase/
   migrations/0008_salidas_flexibles_y_deshacer.sql  salidas sin horario fijo (pendientes de unidad) y "Deshacer" del conductor
   migrations/0009_gestor_de_unidades.sql  gestor de unidades del fiscal, avisos al conductor y disponibilidad que sigue a la salida
   migrations/0010_hora_al_activarse.sql  la hora de salida la pone el conductor al activarse; el reinicio de la demo empieza el día vacío
+  migrations/0011_salidas_viejas_abiertas.sql  una salida de un día anterior que quedó abierta ya no bloquea la unidad
   demo.sql                     cuentas, unidades y salidas de la demo
   rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
   rutas_regreso.sql            la vuelta desde la USM de cada ruta de ida (paradas invertidas; después de la 0007)

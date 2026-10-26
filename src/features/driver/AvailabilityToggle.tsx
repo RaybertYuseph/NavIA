@@ -35,7 +35,9 @@ export function AvailabilityToggle({ vehicle, trip }: { vehicle: Vehicle; trip: 
     setBusy(false);
     if (ok !== true) {
       if (!navigator.onLine) return setError('Sin señal: prueba cuando vuelva la conexión.');
-      return setError(ok === 'fuera_de_servicio' ? 'El fiscal marcó esta unidad fuera de servicio.' : 'No se pudo cambiar. Prueba otra vez.');
+      if (ok === 'fuera_de_servicio') return setError('El fiscal marcó esta unidad fuera de servicio.');
+      if (ok === 'en_ruta') return setError('Tu unidad tiene una salida en curso: termina la ruta primero.');
+      return setError('No se pudo cambiar. Prueba otra vez.');
     }
     setAvailable(next);
     navigator.vibrate?.(60);
