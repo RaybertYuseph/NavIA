@@ -17,12 +17,20 @@ export function stopsForMap(trip: Trip) {
   return stops.map((s, i) => ({ id: s.id, lat: s.lat, lng: s.lng, name: s.name, seq: i + 1, done: idx >= 0 && i <= idx }));
 }
 
-/** La próxima salida que no ha arrancado y cuya hora no pasó hace más de 10 minutos. */
+/** La próxima salida confirmada (con unidad) que no ha arrancado y cuya hora no pasó hace más de 10 minutos. */
 // En la demo, pasada la última salida del día se muestra la primera programada para que el tour no quede vacío.
 export function nextDeparture(trips: Trip[], now: number, demo = false) {
-  const scheduled = trips.filter((t) => t.status === 'scheduled');
+  const scheduled = trips.filter((t) => t.status === 'scheduled' && t.vehicle_id);
   const upcoming = scheduled.find((t) => new Date(t.scheduled_at).getTime() > now - 10 * 60_000);
   return upcoming ?? (demo ? scheduled[0] : undefined) ?? null;
+}
+
+/** Salidas que el fiscal programó y todavía esperan unidad (las de las próximas horas). */
+// En la demo, si ya pasaron todas, se muestran igual para que se vea el flujo.
+export function pendingDepartures(trips: Trip[], now: number, demo = false) {
+  const pending = trips.filter((t) => t.status === 'scheduled' && !t.vehicle_id);
+  const upcoming = pending.filter((t) => new Date(t.scheduled_at).getTime() > now - 10 * 60_000);
+  return upcoming.length || !demo ? upcoming : pending;
 }
 
 /** Paradas que el estudiante aún puede marcar: las que el bus todavía no alcanza. */

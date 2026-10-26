@@ -10,6 +10,10 @@ export type Vehicle = {
   available: boolean;
   /** Ruta que cubre la unidad (0007); solo la trae la consulta del fiscal. */
   route_id?: string | null;
+  /** Desde cuándo está disponible y en la parada de salida de qué ruta (0008); solo para el fiscal. */
+  available_at?: string | null;
+  available_route_id?: string | null;
+  available_driver_id?: string | null;
 };
 
 /** Ruta de la línea, con su corredor (ida y regreso juntos) y si está por abrir. */

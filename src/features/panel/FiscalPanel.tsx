@@ -7,6 +7,7 @@ import { Tabs } from '@/components/Tabs';
 import { fiscalTip, lineStatus, mostWaiting, staleUnits, type LineSummary } from '@/features/guide/answers';
 import { useGuide } from '@/features/guide/GuideProvider';
 import { NaviaFab } from '@/features/guide/NaviaFab';
+import { NewDepartureSheet, StartQueue } from './Departures';
 import { BusMap } from '@/features/map/BusMap';
 import { groupByRoute, waitingByRoute } from '@/features/trips/derive';
 import { useLiveTrips } from '@/features/trips/useLiveTrips';
@@ -42,6 +43,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
   const trips = routeIds ? allTrips.filter((t) => routeIds.has(t.route_id)) : allTrips;
   const routeName = (id: string | null | undefined) => props.routes.find((r) => r.id === id)?.name ?? null;
   const [assigning, setAssigning] = useState<Vehicle | null>(null);
+  const [creating, setCreating] = useState(false);
+  const shownRoutes = routeIds ? props.routes.filter((r) => routeIds.has(r.id)) : props.routes;
 
   const units = vehicles
     .map((v) => {
@@ -109,6 +112,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         <Kpi label="Salidas completadas" value={`${done}/${trips.length}`} tone="text-indigo-600" />
         <Kpi label="Estudiantes en espera" value={waiting} tone="text-cyan-600" wide />
       </section>
+
+      <StartQueue routes={shownRoutes} trips={trips} vehicles={vehicles} drivers={props.drivers} onNew={() => setCreating(true)} />
 
       <WaitingByStop trips={trips} />
 
@@ -194,7 +199,12 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
 
       {tab === 'salidas' && (
       <section aria-labelledby="salidas">
-        <h2 id="salidas" className="section-title">Salidas de hoy por ruta</h2>
+        <div className="flex items-end justify-between gap-2">
+          <h2 id="salidas" className="section-title">Salidas de hoy por ruta</h2>
+          <button type="button" onClick={() => setCreating(true)} className="chip mb-2 py-1.5 text-sm">
+            + Nueva salida
+          </button>
+        </div>
         <div className="flex flex-col gap-3">
           {trips.length === 0 && <p className="card rounded-3xl p-4 text-slate-600">Esta ruta no tiene salidas hoy.</p>}
           {groupByRoute(trips).map(({ route, trips: rt }) => (
@@ -222,7 +232,14 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                   {rt.map((t) => (
                     <tr key={t.id} className="border-t border-slate-100">
                       <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{formatHour(t.scheduled_at)}</td>
-                      <td className="py-1.5 pr-3 font-mono">{t.vehicles?.plate ?? '—'}</td>
+                      <td className="py-1.5 pr-3 font-mono">
+                        {t.vehicles?.plate ??
+                          (t.status === 'scheduled' ? (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 font-sans text-xs font-semibold whitespace-nowrap text-amber-800">Por confirmar unidad</span>
+                          ) : (
+                            '—'
+                          ))}
+                      </td>
                       <td className="py-1.5 pr-3 whitespace-nowrap">{(t.driver_id && props.drivers[t.driver_id]) || '—'}</td>
                       <td className="py-1.5 pr-3">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[t.status]}`}>{STATUS_LABEL[t.status]}</span>
@@ -238,6 +255,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         </div>
       </section>
       )}
+
+      {creating && <NewDepartureSheet routes={shownRoutes} onClose={() => setCreating(false)} onCreated={() => void refetch()} />}
 
       <NaviaFab
         raised

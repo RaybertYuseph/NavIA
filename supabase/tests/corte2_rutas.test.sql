@@ -24,13 +24,6 @@ do $$ begin
 exception when invalid_parameter_value then raise notice 'ok: no se asigna una ruta ajena';
 end $$;
 
-reset role;
-insert into trips (route_id, scheduled_at) values ('00000000-0000-0000-0000-000000000041', now() + interval '1 day');
-select pg_temp.assert((select vehicle_id = '00000000-0000-0000-0000-000000000020' from trips where route_id = '00000000-0000-0000-0000-000000000041'),
-  'una salida nueva sin unidad toma la asignada a su ruta');
-
-set role authenticated;
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
 select assign_vehicle_route('00000000-0000-0000-0000-000000000020', null);
 select pg_temp.assert((select route_id is null from vehicles where id = '00000000-0000-0000-0000-000000000020'), 'quitar la ruta deja la unidad libre');
 reset role;

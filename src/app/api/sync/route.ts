@@ -57,6 +57,7 @@ async function insertGroup(
         actor_id: actorId,
         client_event_id: first.id,
         occurred_at: first.occurred_at,
+        ...(first.restore && { restore_status: first.restore.status, restore_stop_id: first.restore.stop_id }),
       },
       { onConflict: 'client_event_id', ignoreDuplicates: true },
     );

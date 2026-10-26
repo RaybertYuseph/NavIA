@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { subscribeWithSession } from '@/lib/supabase/realtime';
@@ -14,6 +14,8 @@ const POLL_MS = 10_000;
  */
 export function useLiveTrips(initial: Trip[]) {
   const [trips, setTrips] = useState(initial);
+  const current = useRef(trips);
+  current.current = trips;
   const [now, setNow] = useState(() => Date.now());
   const [online, setOnline] = useState(true);
 
@@ -32,10 +34,15 @@ export function useLiveTrips(initial: Trip[]) {
         .channel('navia-live')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trips' }, (p: RealtimePostgresChangesPayload<Trip>) => {
           const row = p.new as Partial<Trip> & { id: string };
+          // Se le asignó (o quitó) unidad: hace falta la foto y la placa de la nueva.
+          const before = current.current.find((t) => t.id === row.id);
+          if (before && 'vehicle_id' in row && row.vehicle_id !== before.vehicle_id) void refetch();
           setTrips((prev) =>
             prev.map((t) => (t.id === row.id ? { ...t, ...row, routes: t.routes, vehicles: t.vehicles } : t)),
           );
         })
+        // Una salida nueva (el fiscal la creó o un conductor se activó sin pendientes).
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'trips' }, () => void refetch())
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, (p: RealtimePostgresChangesPayload<Vehicle>) => {
           const v = p.new as Vehicle;
           setTrips((prev) => prev.map((t) => (t.vehicle_id === v.id ? { ...t, vehicles: { ...t.vehicles, ...v } } : t)));

@@ -52,6 +52,9 @@ reset role;
 update trips set scheduled_at = scheduled_at - interval '1 day';
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
-select pg_temp.assert((select reset_demo_today() = 2), 'sin salidas hoy, el reinicio las crea desde el día anterior');
-select pg_temp.assert((select count(*) = 4 from trips), 'las salidas de ayer se conservan');
+create temp table ayer as select count(*) as n from trips;
+grant select on ayer to authenticated;
+select pg_temp.assert((select reset_demo_today() >= 2), 'sin salidas hoy, el reinicio las crea desde el día anterior');
+select pg_temp.assert((select count(*) from trips where (scheduled_at at time zone 'America/Caracas')::date < (now() at time zone 'America/Caracas')::date) = (select n from ayer),
+  'las salidas de ayer se conservan');
 reset role;

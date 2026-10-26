@@ -20,6 +20,8 @@ from trips t
 where (t.scheduled_at at time zone 'America/Caracas')::date = (now() at time zone 'America/Caracas')::date
 order by t.scheduled_at limit 1;
 grant select on ctx to authenticated;
+-- Desde 0008 el reinicio deja las salidas sin unidad: esta queda a cargo del conductor d1.
+update trips set driver_id = '00000000-0000-0000-0000-0000000000d1', vehicle_id = '00000000-0000-0000-0000-000000000020' where id = (select trip from ctx);
 
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e1', false);

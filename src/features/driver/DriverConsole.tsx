@@ -8,9 +8,10 @@ import { NaviaFab } from '@/features/guide/NaviaFab';
 import { db } from '@/lib/offline/db';
 import { enqueue, onPendingChange, startAutoSync } from '@/lib/offline/sync';
 import { AvailabilityToggle } from './AvailabilityToggle';
+import { AvailableAtStop } from './AvailableAtStop';
 import type { TripEventType } from '@/lib/offline/types';
 import { formatHour } from '@/lib/time';
-import { STATUS_LABEL, STATUS_STYLE, sortedStops, type Trip } from '@/features/trips/types';
+import { STATUS_LABEL, STATUS_STYLE, sortedStops, type RouteInfo, type Trip, type Vehicle } from '@/features/trips/types';
 import { applyEvent, driverPhase, nextStop, primaryAction, type DriverState } from './state';
 import { useGps, type GpsState } from './useGps';
 import { useWaiting } from './useWaiting';
@@ -46,25 +47,22 @@ async function loadInitialState(trip: Trip): Promise<DriverState> {
   }
 }
 
-export function DriverConsole({ trips }: { trips: Trip[] }) {
-  const firstOpen = trips.find((t) => t.status !== 'finalizada' && t.status !== 'cancelada') ?? trips[0];
-  const [tripId, setTripId] = useState(firstOpen?.id);
-  const trip = trips.find((t) => t.id === tripId);
+export function DriverConsole(props: { trips: Trip[]; vehicles: Vehicle[]; routes: RouteInfo[]; myVehicleId: string | null }) {
+  const { trips } = props;
+  const open = trips.filter((t) => t.status !== 'finalizada' && t.status !== 'cancelada');
+  const [tripId, setTripId] = useState(open[0]?.id ?? trips[0]?.id);
+  // Una salida nueva (recién asignada al activarse) pasa al frente.
+  const trip = trips.find((t) => t.id === tripId) ?? open[0] ?? trips[0];
 
   useEffect(() => startAutoSync(), []);
 
-  if (!trip) {
-    return (
-      <div className="card mt-6 flex flex-col items-center gap-2 rounded-3xl p-6 text-center">
-        <NaviaAgent size={96} animated />
-        <p className="text-lg font-bold">Hoy no tienes salidas asignadas</p>
-        <p className="text-sm text-slate-600">Cuando el fiscal te asigne una, aparece aquí.</p>
-      </div>
-    );
-  }
+  // Sin salida abierta: se activa disponible en la parada de salida y la BD le asigna una.
+  const atStop = open.length === 0 && <AvailableAtStop vehicles={props.vehicles} routes={props.routes} myVehicleId={props.myVehicleId} />;
+  if (!trip) return <div className="flex flex-col gap-4">{atStop}</div>;
   return (
     <div className="flex flex-col gap-4">
-      {trip.vehicles && <AvailabilityToggle key={trip.vehicles.id} vehicle={trip.vehicles} />}
+      {atStop}
+      {trip.vehicles && open.length > 0 && <AvailabilityToggle key={trip.vehicles.id} vehicle={trip.vehicles} />}
       {trips.length > 1 && (
         <section data-tour="salidas" aria-label="Tus salidas de hoy">
           <h2 className="section-title">Tus salidas de hoy</h2>
@@ -116,6 +114,13 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
   const [state, setState] = useState<DriverState>({ status: trip.status, currentStopId: trip.current_stop_id });
   const [pending, setPending] = useState(0);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [undo, setUndo] = useState<{ label: string; prev: DriverState; eventId: string } | null>(null);
+  const [goBackTo, setGoBackTo] = useState<{ id: string; name: string } | null>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(null), 8000);
+    return () => clearTimeout(t);
+  }, [undo]);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,14 +142,44 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
   const waitingAt = (stopId: string | undefined) => (stopId ? (waiting[stopId] ?? 0) : 0);
   const totalAhead = stops.slice(currentIdx + 1).reduce((a, s) => a + waitingAt(s.id), 0);
 
-  async function send(type: TripEventType, stopId: string | null = null) {
-    setConfirmEnd(false);
-    const next = applyEvent(state, type, stopId);
-    const at = new Date().toISOString();
+  function remember(next: DriverState, at: string) {
     setState(next);
     localStorage.setItem(storageKey(trip.id), JSON.stringify({ ...next, at }));
+  }
+
+  async function send(type: TripEventType, stopId: string | null = null, label?: string) {
+    setConfirmEnd(false);
+    const prev = state;
+    const next = applyEvent(state, type, stopId);
+    const at = new Date().toISOString();
+    const id = crypto.randomUUID();
+    remember(next, at);
     navigator.vibrate?.(80);
-    await enqueue({ kind: 'event', id: crypto.randomUUID(), trip_id: trip.id, type, stop_id: stopId, occurred_at: at });
+    if (label) setUndo({ label, prev, eventId: id });
+    await enqueue({ kind: 'event', id, trip_id: trip.id, type, stop_id: stopId, occurred_at: at });
+  }
+
+  /**
+   * Vuelve a un estado anterior (Deshacer o corregir una parada). Si el evento aún no salió del
+   * teléfono se borra de la cola; igual se envía la corrección, que fija el estado y es inocua si
+   * el evento nunca llegó.
+   */
+  async function restore(prev: DriverState, eventId?: string) {
+    setUndo(null);
+    setGoBackTo(null);
+    if (eventId) await db.queue.where('id').equals(eventId).delete();
+    const at = new Date().toISOString();
+    remember(prev, at);
+    navigator.vibrate?.(40);
+    await enqueue({
+      kind: 'event',
+      id: crypto.randomUUID(),
+      trip_id: trip.id,
+      type: 'correccion',
+      stop_id: null,
+      occurred_at: at,
+      restore: { status: prev.status, stop_id: prev.currentStopId },
+    });
   }
 
   // Arriba del botón, dónde está y qué sigue; el botón dice lo que el conductor acaba de hacer.
@@ -158,7 +193,7 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
         : state.status === 'en_parada'
           ? { top: `Cargando en ${atStop?.name ?? 'la parada'}`, main: 'Ya subieron todos' }
           : { top: 'Cuando arranques', main: '¡En camino!' };
-  const onPrimary = () => (action?.type === 'fin_de_ruta' ? setConfirmEnd(true) : action && void send(action.type, action.stop?.id ?? null));
+  const onPrimary = () => (action?.type === 'fin_de_ruta' ? setConfirmEnd(true) : action && label && void send(action.type, action.stop?.id ?? null, label.main));
 
   return (
     <>
@@ -256,9 +291,30 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
           }
           confirmLabel="Sí, terminar"
           cancelLabel="Seguir en ruta"
-          onConfirm={() => void send('fin_de_ruta')}
+          onConfirm={() => void send('fin_de_ruta', null, 'Terminar ruta')}
           onCancel={() => setConfirmEnd(false)}
         />
+      )}
+      {goBackTo && (
+        <ConfirmSheet
+          title={`¿Volver a ${goBackTo.name}?`}
+          body="Quedas otra vez cargando en esa parada y se desmarcan las paradas siguientes."
+          confirmLabel={`Sí, volver a ${goBackTo.name}`}
+          cancelLabel="Dejarlo así"
+          onConfirm={() => void restore({ status: 'en_parada', currentStopId: goBackTo.id })}
+          onCancel={() => setGoBackTo(null)}
+        />
+      )}
+      {undo && (
+        <div role="status" className="tour-pop fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-2xl">
+          <Icon name="check" className="h-5 w-5 shrink-0 text-emerald-300" />
+          <p className="min-w-0 flex-1 truncate text-sm">
+            Marcaste: <span className="font-bold">{undo.label}</span>
+          </p>
+          <button type="button" onClick={() => void restore(undo.prev, undo.eventId)} className="shrink-0 rounded-xl bg-white/15 px-3 py-1.5 text-sm font-bold">
+            Deshacer
+          </button>
+        </div>
       )}
 
       <section data-tour="paradas" className="card rounded-3xl p-4" aria-label="Paradas">
@@ -270,13 +326,24 @@ function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onG
             const isNext = !here && s.id === upcoming?.id && active;
             return (
               <li key={s.id} className="flex items-center gap-3 py-1.5 text-sm">
+                {done ? (
+                  <button
+                    type="button"
+                    onClick={() => setGoBackTo({ id: s.id, name: s.name })}
+                    aria-label={`Volver a ${s.name}`}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-white ring-offset-2 transition active:scale-90"
+                  >
+                    ✓
+                  </button>
+                ) : (
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    done ? 'bg-emerald-500 text-white' : here ? 'bg-amber-400 text-white ring-4 ring-amber-100' : isNext ? 'bg-brand-500 text-white ring-4 ring-brand-100' : 'bg-slate-100 text-slate-500'
+                    here ? 'bg-amber-400 text-white ring-4 ring-amber-100' : isNext ? 'bg-brand-500 text-white ring-4 ring-brand-100' : 'bg-slate-100 text-slate-500'
                   }`}
                 >
-                  {done ? '✓' : i + 1}
+                  {i + 1}
                 </span>
+                )}
                 <span className={done ? 'text-slate-400 line-through decoration-slate-300' : here || isNext ? 'font-bold' : 'font-medium'}>{s.name}</span>
                 {!done && (
                   <span

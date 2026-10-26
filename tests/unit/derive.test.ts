@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { groupByRoute, nextDeparture, pendingStops, stopsForMap, waitingByRoute } from '@/features/trips/derive';
+import { groupByRoute, nextDeparture, pendingDepartures, pendingStops, stopsForMap, waitingByRoute } from '@/features/trips/derive';
 import type { Trip } from '@/features/trips/types';
 
 const stops = [1, 2, 3].map((seq) => ({ id: `s${seq}`, seq, name: `P${seq}`, lat: seq, lng: seq }));
 const trip = (id: string, hhmm: string, status: Trip['status'], route = 'r1'): Trip => ({
   id,
   route_id: route,
-  vehicle_id: null,
+  vehicle_id: 'v1',
   waiting: {},
   driver_id: null,
   scheduled_at: `2026-10-18T${hhmm}:00-04:00`,
@@ -30,6 +30,11 @@ describe('nextDeparture', () => {
   it('en la demo, pasada la última, muestra la primera programada', () => {
     const trips = [trip('a', '06:00', 'finalizada'), trip('b', '06:10', 'scheduled')];
     expect(nextDeparture(trips, now, true)?.id).toBe('b');
+  });
+  it('las salidas sin unidad no cuentan como confirmadas: van como pendientes', () => {
+    const trips = [{ ...trip('a', '07:10', 'scheduled'), vehicle_id: null }, trip('b', '07:40', 'scheduled')];
+    expect(nextDeparture(trips, now)?.id).toBe('b');
+    expect(pendingDepartures(trips, now).map((t) => t.id)).toEqual(['a']);
   });
 });
 

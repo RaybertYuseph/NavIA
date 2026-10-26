@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Vehicle } from '@/features/trips/types';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 
 /** El conductor marca su unidad como disponible para salir (la ve el fiscal al instante). */
 export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
+  const router = useRouter();
   const [available, setAvailable] = useState(vehicle.available);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,8 @@ export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
     if (!ok) return setError(navigator.onLine ? 'No se pudo cambiar. Prueba otra vez.' : 'Sin señal: prueba cuando vuelva la conexión.');
     setAvailable(next);
     navigator.vibrate?.(60);
+    // Al dejar de estar disponible, la salida que no arrancó vuelve a pendiente (0008).
+    if (!next) router.refresh();
   }
 
   return (

@@ -14,7 +14,7 @@ import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { formatHour, timeAgo } from '@/lib/time';
 import { useLiveTrips } from './useLiveTrips';
 import { WaitAtStop } from './WaitAtStop';
-import { groupByRoute, nextDeparture, stopsForMap } from './derive';
+import { groupByRoute, nextDeparture, pendingDepartures, stopsForMap } from './derive';
 import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, sortedStops, type Trip } from './types';
 
 const STALE_MS = 5 * 60_000;
@@ -26,7 +26,10 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
   const live = trips.filter(isLive);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = live.find((t) => t.id === selectedId) ?? live[0] ?? null;
-  const next = nextDeparture(trips, now, process.env.NEXT_PUBLIC_DEMO === '1');
+  const demo = process.env.NEXT_PUBLIC_DEMO === '1';
+  const next = nextDeparture(trips, now, demo);
+  const pending = pendingDepartures(trips, now, demo);
+  const tip = studentTip(live, next, now, pending[0] ?? null);
 
   return (
     <div className="flex flex-col gap-5">
@@ -41,7 +44,7 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
 
       {tab === 'inicio' && (
         <>
-          <NaviaSays text={studentTip(live, next, now)} />
+          <NaviaSays text={tip} />
 
           <section aria-labelledby="proxima" data-tour="proxima">
             <h2 id="proxima" className="section-title">Próxima salida</h2>
@@ -60,7 +63,16 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
                 </div>
               </div>
             ) : (
-              <Empty text="Por hoy no quedan salidas. Nos vemos mañana." />
+              <Empty text={pending.length ? 'Aún no hay salidas confirmadas. Te aviso apenas un conductor esté en la parada.' : 'Por hoy no quedan salidas. Nos vemos mañana.'} />
+            )}
+            {pending.length > 0 && (
+              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Salidas por confirmar">
+                {pending.slice(0, 4).map((t) => (
+                  <li key={t.id} className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-800 ring-1 ring-amber-100">
+                    {formatHour(t.scheduled_at)} · por confirmar unidad
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
@@ -134,7 +146,7 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
 
       <NaviaFab
         raised
-        tip={studentTip(live, next, now)}
+        tip={tip}
         questions={[
           { q: '¿Dónde viene la camioneta?', answer: () => whereIsBus(live, next, now) },
           { q: '¿Cuándo sale la próxima?', answer: () => whenNext(next, now) },
@@ -210,6 +222,7 @@ function RoutesSchedule({ trips }: { trips: Trip[] }) {
                 <li key={t.id} className={`rounded-xl px-2.5 py-1 text-sm font-semibold ${STATUS_STYLE[t.status]}`} title={STATUS_LABEL[t.status]}>
                   {formatHour(t.scheduled_at)}
                   {isLive(t) && ' · en camino'}
+                  {t.status === 'scheduled' && !t.vehicle_id && ' · por confirmar'}
                   {t.status === 'finalizada' && ' ✓'}
                 </li>
               ))}
