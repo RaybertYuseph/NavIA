@@ -121,6 +121,8 @@ export function NaviaTour(props: {
 
   useLayoutEffect(() => {
     if (!step) return;
+    // La tarjeta del paso nuevo espera a que NavIA llegue; si no, se vería sobre el elemento anterior.
+    setWalking(true);
     if (step.tab) onTab(step.tab);
     let frame = 0;
     const measure = (walk: boolean) => {

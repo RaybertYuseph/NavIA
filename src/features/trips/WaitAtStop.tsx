@@ -34,6 +34,24 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Si el conteo de mi parada baja a 0 (p. ej. el fiscal reinició la demo), se confirma con el
+  // servidor si la espera sigue; si ya no existe, la tarjeta vuelve a "Estoy aquí".
+  const myCount = wait ? (trips.find((t) => t.id === wait.trip_id)?.waiting?.[wait.stop_id] ?? 0) : null;
+  useEffect(() => {
+    if (!wait || myCount !== 0) return;
+    let cancelled = false;
+    void createClient()
+      .from('stop_waits')
+      .select('trip_id')
+      .eq('trip_id', wait.trip_id)
+      .is('picked_at', null)
+      .maybeSingle()
+      .then(({ data }: { data: { trip_id: string } | null }) => !cancelled && !data && setWait(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [wait, myCount]);
+
   const trip = trips.find((t) => t.id === (wait?.trip_id ?? tripId ?? preferredTripId)) ?? open[0] ?? null;
   if (!trip) return null;
 
