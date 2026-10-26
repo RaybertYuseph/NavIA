@@ -82,6 +82,7 @@ supabase/
   migrations/0010_hora_al_activarse.sql  la hora de salida la pone el conductor al activarse; el reinicio de la demo empieza el día vacío
   demo.sql                     cuentas, unidades y salidas de la demo
   rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
+  rutas_regreso.sql            la vuelta desde la USM de cada ruta de ida (paradas invertidas; después de la 0007)
   templates/codigo.html        correo con el código de entrada
   datos_piloto.sql             ruta, paradas y salidas de hoy para el proyecto en la nube
   seed.sql                     USM, 1 operador, 1 ruta con 5 paradas, 2 salidas hoy
