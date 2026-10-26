@@ -14,6 +14,9 @@ export type Vehicle = {
   available_at?: string | null;
   available_route_id?: string | null;
   available_driver_id?: string | null;
+  /** Gestor de unidades (0009): desincorporada (active false) o fuera de servicio por el fiscal. */
+  active?: boolean;
+  in_service?: boolean;
 };
 
 /** Ruta de la línea, con su corredor (ida y regreso juntos) y si está por abrir. */

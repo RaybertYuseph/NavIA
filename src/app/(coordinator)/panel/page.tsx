@@ -10,7 +10,7 @@ export default async function FiscalPage() {
   const [{ supabase, profile }] = await Promise.all([requireRole(['coordinator', 'admin']), ensureDemoDay()]);
   const [trips, vehicles, routes, drivers] = await Promise.all([
     fetchTodayTrips(supabase),
-    fetchVehicles(supabase),
+    fetchVehicles(supabase, { retired: true }),
     fetchRoutes(supabase),
     supabase.from('profiles').select('id, full_name').eq('role', 'driver'),
   ]);

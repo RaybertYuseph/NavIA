@@ -1,13 +1,22 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Vehicle } from '@/features/trips/types';
+import { currentStop, type Trip, type Vehicle } from '@/features/trips/types';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 
-/** El conductor marca su unidad como disponible para salir (la ve el fiscal al instante). */
-export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
+/**
+ * El conductor marca su unidad como disponible para salir (la ve el fiscal al instante). Con la
+ * salida en curso no hay interruptor: la unidad está en servicio hasta terminar la ruta (0009).
+ */
+export function AvailabilityToggle({ vehicle, trip }: { vehicle: Vehicle; trip: Trip }) {
   const router = useRouter();
   const [available, setAvailable] = useState(vehicle.available);
+  const live = trip.status === 'en_parada' || trip.status === 'en_camino';
+  // La base de datos la deja disponible al llegar a la salida y no disponible al terminar.
+  useEffect(() => {
+    if (live) setAvailable(true);
+    else if (trip.status === 'finalizada') setAvailable(false);
+  }, [live, trip.status]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,10 +30,13 @@ export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ vehicle_id: vehicle.id, available: next }),
     })
-      .then((r) => r.ok)
+      .then(async (r) => r.ok || ((await r.json().catch(() => ({}))) as { hint?: string }).hint || false)
       .catch(() => false);
     setBusy(false);
-    if (!ok) return setError(navigator.onLine ? 'No se pudo cambiar. Prueba otra vez.' : 'Sin señal: prueba cuando vuelva la conexión.');
+    if (ok !== true) {
+      if (!navigator.onLine) return setError('Sin señal: prueba cuando vuelva la conexión.');
+      return setError(ok === 'fuera_de_servicio' ? 'El fiscal marcó esta unidad fuera de servicio.' : 'No se pudo cambiar. Prueba otra vez.');
+    }
     setAvailable(next);
     navigator.vibrate?.(60);
     // Al dejar de estar disponible, la salida que no arrancó vuelve a pendiente (0008).
@@ -36,11 +48,16 @@ export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
       <VehiclePhoto vehicle={vehicle} size="sm" />
       <div className="flex-1">
         <p className="text-sm text-slate-500">Tu unidad</p>
-        <p className={`font-bold ${available ? 'text-emerald-700' : 'text-slate-600'}`}>
-          {available ? 'Disponible para salir' : 'No disponible'}
-        </p>
+        {live ? (
+          <p className="font-bold text-emerald-700">
+            En servicio · {trip.status === 'en_parada' ? `Cargando en ${currentStop(trip)?.name ?? 'la parada'}` : 'En camino'}
+          </p>
+        ) : (
+          <p className={`font-bold ${available ? 'text-emerald-700' : 'text-slate-600'}`}>{available ? 'Disponible para salir' : 'No disponible'}</p>
+        )}
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
+      {!live && (
       <button
         type="button"
         role="switch"
@@ -52,6 +69,7 @@ export function AvailabilityToggle({ vehicle }: { vehicle: Vehicle }) {
       >
         <span className={`absolute top-1 h-7 w-7 rounded-full bg-white shadow transition-all ${available ? 'left-8' : 'left-1'}`} />
       </button>
+      )}
     </section>
   );
 }

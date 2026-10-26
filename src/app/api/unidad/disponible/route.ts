@@ -16,6 +16,9 @@ export async function POST(req: Request) {
     p_vehicle_id: parsed.data.vehicle_id,
     p_available: parsed.data.available,
   });
-  if (error) return Response.json({ error: error.message }, { status: error.code === '42501' ? 403 : 500 });
+  if (error) {
+    const status = error.code === '42501' ? 403 : error.code === '55000' ? 409 : 500;
+    return Response.json({ error: error.message, hint: error.hint }, { status });
+  }
   return Response.json({ ok: true });
 }

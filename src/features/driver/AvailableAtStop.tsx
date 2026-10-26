@@ -35,7 +35,13 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
     if (!res?.ok) {
       setBusy(false);
       return setError(
-        !res ? 'Sin señal: prueba cuando vuelva la conexión.' : res.status === 501 ? 'Falta aplicar la migración 0008 en Supabase.' : 'No se pudo activar. Prueba otra vez.',
+        !res
+          ? 'Sin señal: prueba cuando vuelva la conexión.'
+          : res.status === 501
+            ? 'Falta aplicar la migración 0008 en Supabase.'
+            : res.status === 409
+              ? 'El fiscal marcó esta unidad fuera de servicio. Elige otra o avísale.'
+              : 'No se pudo activar. Prueba otra vez.',
       );
     }
     navigator.vibrate?.(80);
@@ -64,7 +70,7 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
       {vehicles.length > 1 && (
         <fieldset>
           <legend className="text-sm font-semibold text-slate-600">Tu unidad</legend>
-          <div className="-mx-4 mt-1.5 flex gap-2 overflow-x-auto px-4 pb-1">
+          <div className="mt-1.5 flex flex-wrap gap-2">
             {vehicles.map((v) => (
               <button
                 key={v.id}

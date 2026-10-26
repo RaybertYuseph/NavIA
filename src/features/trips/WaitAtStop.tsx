@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { SelectField } from '@/components/SelectField';
 import { distanceM } from '@/lib/geo';
 import { createClient } from '@/lib/supabase/client';
 import { formatHour } from '@/lib/time';
@@ -195,35 +196,16 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
           if (chosen) void markHere(chosen);
         }}
       >
-        <fieldset>
-          <legend className="text-sm font-semibold text-slate-600">Salida</legend>
-          <div className="-mx-4 mt-1.5 flex gap-2 overflow-x-auto px-4 pb-1">
-            {open.map((t) => {
-              const active = t.id === trip.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    setTripId(t.id);
-                    setStopId('');
-                    setError(null);
-                  }}
-                  className={`shrink-0 rounded-2xl px-3.5 py-2 text-left transition active:scale-[0.98] ${
-                    active ? 'bg-ink text-white shadow-lg shadow-ink/20' : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'
-                  }`}
-                >
-                  <span className="block text-lg leading-tight font-extrabold">{formatHour(t.scheduled_at)}</span>
-                  <span className={`block max-w-36 truncate text-xs ${active ? 'text-white/80' : 'text-slate-500'}`}>
-                    {isLive(t) ? '● En camino · ' : ''}
-                    {t.routes?.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+        <SelectField
+          label="Salida"
+          value={trip.id}
+          options={open.map((t) => ({ value: t.id, label: `${formatHour(t.scheduled_at)} · ${t.routes?.name ?? ''}${isLive(t) ? ' · en camino' : ''}` }))}
+          onChange={(id) => {
+            setTripId(id);
+            setStopId('');
+            setError(null);
+          }}
+        />
         <fieldset>
           <legend className="text-sm font-semibold text-slate-600">¿En qué parada estás?</legend>
           {choices.length === 0 ? (

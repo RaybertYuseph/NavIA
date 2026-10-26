@@ -101,7 +101,7 @@ export function fiscalTip(s: LineSummary) {
 
 export function lineStatus(s: LineSummary): NaviaAnswer {
   return {
-    text: `${s.enRuta} en ruta, ${s.disponibles} ${s.disponibles === 1 ? 'disponible' : 'disponibles'} y ${s.fuera} fuera de servicio. Van ${s.done} de ${s.total} salidas y hay ${s.waiting} ${s.waiting === 1 ? 'estudiante esperando' : 'estudiantes esperando'}.`,
+    text: `${s.enRuta} en ruta, ${s.disponibles} ${s.disponibles === 1 ? 'disponible' : 'disponibles'} y ${s.fuera} no ${s.fuera === 1 ? 'disponible' : 'disponibles'}. Van ${s.done} de ${s.total} salidas y hay ${s.waiting} ${s.waiting === 1 ? 'estudiante esperando' : 'estudiantes esperando'}.`,
     tab: 'resumen',
     actionLabel: 'Ver el resumen',
   };

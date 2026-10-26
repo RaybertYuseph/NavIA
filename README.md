@@ -78,6 +78,7 @@ supabase/
   migrations/0006_espera_con_gps.sql    "Estoy aquí" solo a 50 m o menos de la parada
   migrations/0007_rutas_y_unidades.sql  corredores, rutas "Próximamente" y unidad asignada a cada ruta
   migrations/0008_salidas_flexibles_y_deshacer.sql  salidas sin horario fijo (pendientes de unidad) y "Deshacer" del conductor
+  migrations/0009_gestor_de_unidades.sql  gestor de unidades del fiscal, avisos al conductor y disponibilidad que sigue a la salida
   demo.sql                     cuentas, unidades y salidas de la demo
   rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
   templates/codigo.html        correo con el código de entrada

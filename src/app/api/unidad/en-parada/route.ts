@@ -20,8 +20,8 @@ export async function POST(req: Request) {
     p_route_id: parsed.data.route_id,
   });
   if (error) {
-    const status = error.code === '42501' ? 403 : error.code === 'PGRST202' ? 501 : 500;
-    return Response.json({ error: error.message, code: error.code }, { status });
+    const status = error.code === '42501' ? 403 : error.code === 'PGRST202' ? 501 : error.code === '55000' ? 409 : 500;
+    return Response.json({ error: error.message, code: error.code, hint: error.hint }, { status });
   }
   return Response.json({ trip_id: data });
 }

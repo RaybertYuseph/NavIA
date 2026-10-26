@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { ConfirmSheet } from '@/components/ConfirmSheet';
+import { SelectField } from '@/components/SelectField';
 import { Icon } from '@/components/icons';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { NO_SIGNAL, driverTip, waitingAhead } from '@/features/guide/answers';
@@ -8,10 +9,11 @@ import { NaviaFab } from '@/features/guide/NaviaFab';
 import { db } from '@/lib/offline/db';
 import { enqueue, onPendingChange, startAutoSync } from '@/lib/offline/sync';
 import { AvailabilityToggle } from './AvailabilityToggle';
+import { DriverNotices } from './DriverNotices';
 import { AvailableAtStop } from './AvailableAtStop';
 import type { TripEventType } from '@/lib/offline/types';
 import { formatHour } from '@/lib/time';
-import { STATUS_LABEL, STATUS_STYLE, sortedStops, type RouteInfo, type Trip, type Vehicle } from '@/features/trips/types';
+import { STATUS_LABEL, STATUS_STYLE, isLive, sortedStops, type RouteInfo, type Trip, type Vehicle } from '@/features/trips/types';
 import { applyEvent, driverPhase, nextStop, primaryAction, type DriverState } from './state';
 import { useGps, type GpsState } from './useGps';
 import { useWaiting } from './useWaiting';
@@ -58,36 +60,29 @@ export function DriverConsole(props: { trips: Trip[]; vehicles: Vehicle[]; route
 
   // Sin salida abierta: se activa disponible en la parada de salida y la BD le asigna una.
   const atStop = open.length === 0 && <AvailableAtStop vehicles={props.vehicles} routes={props.routes} myVehicleId={props.myVehicleId} />;
-  if (!trip) return <div className="flex flex-col gap-4">{atStop}</div>;
+  if (!trip)
+    return (
+      <div className="flex flex-col gap-4">
+        <DriverNotices />
+        {atStop}
+      </div>
+    );
   return (
     <div className="flex flex-col gap-4">
+      <DriverNotices />
       {atStop}
-      {trip.vehicles && open.length > 0 && <AvailabilityToggle key={trip.vehicles.id} vehicle={trip.vehicles} />}
+      {trip.vehicles && open.length > 0 && <AvailabilityToggle key={trip.vehicles.id} vehicle={trip.vehicles} trip={trip} />}
       {trips.length > 1 && (
         <section data-tour="salidas" aria-label="Tus salidas de hoy">
-          <h2 className="section-title">Tus salidas de hoy</h2>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-            {trips.map((t) => {
-              const active = t.id === trip.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setTripId(t.id)}
-                  aria-pressed={active}
-                  className={`shrink-0 rounded-2xl px-3.5 py-2 text-left transition ${
-                    active ? 'bg-ink text-white shadow-lg shadow-ink/20' : 'card text-slate-700'
-                  } ${t.status === 'finalizada' && !active ? 'opacity-50' : ''}`}
-                >
-                  <span className="block text-lg leading-tight font-extrabold">{formatHour(t.scheduled_at)}</span>
-                  <span className={`block max-w-36 truncate text-xs ${active ? 'text-white/80' : 'text-slate-500'}`}>
-                    {t.status === 'finalizada' ? '✓ ' : ''}
-                    {t.routes?.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <SelectField
+            label="Tus salidas de hoy"
+            value={trip.id}
+            options={trips.map((t) => ({
+              value: t.id,
+              label: `${formatHour(t.scheduled_at)} · ${t.routes?.name ?? ''}${t.status === 'finalizada' ? ' · terminada' : isLive(t) ? ' · en curso' : ''}`,
+            }))}
+            onChange={setTripId}
+          />
         </section>
       )}
       <TripControls key={trip.id} trip={trip} next={nextTrip(trips, trip)} onGo={setTripId} />

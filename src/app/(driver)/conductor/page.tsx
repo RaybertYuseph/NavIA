@@ -20,7 +20,7 @@ export default async function DriverHome() {
     <AppShell profile={profile}>
       <DriverConsole
         trips={trips}
-        vehicles={vehicles}
+        vehicles={vehicles.filter((v) => v.in_service !== false)}
         routes={routes.filter((r) => !r.coming_soon && r.stops.length > 0)}
         myVehicleId={(last.data as { vehicle_id: string } | null)?.vehicle_id ?? null}
       />
