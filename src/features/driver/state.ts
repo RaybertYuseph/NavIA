@@ -26,14 +26,23 @@ export function nextStop(stops: Stop[], currentStopId: string | null): Stop | nu
   return i >= 0 ? (stops[i + 1] ?? null) : (stops[0] ?? null);
 }
 
-/** Qué botones se pueden tocar en cada estado. */
+/**
+ * Qué botones se pueden tocar en cada estado. Antes de salir se llega a la parada de salida
+ * (para cargar); "En camino" solo después de cargar, o directo si la ruta no tiene paradas.
+ */
 export function allowedActions(state: DriverState, stops: Stop[]) {
   const active = state.status === 'en_camino' || state.status === 'en_parada';
+  const upcoming = nextStop(stops, state.currentStopId) !== null;
   return {
-    enCamino: state.status === 'scheduled' || state.status === 'en_parada',
-    enParada: state.status === 'en_camino' && nextStop(stops, state.currentStopId) !== null,
+    enCamino: state.status === 'en_parada' || (state.status === 'scheduled' && stops.length === 0),
+    enParada: (state.status === 'scheduled' || state.status === 'en_camino') && upcoming,
     finDeRuta: active,
   };
+}
+
+/** Paso del ciclo en cada parada, para el indicador Llegué → Cargando → En camino. */
+export function driverPhase(status: DriverState['status']): 0 | 1 | 2 {
+  return status === 'en_parada' ? 1 : status === 'en_camino' ? 2 : 0;
 }
 
 export type PrimaryAction = { type: 'en_camino' | 'en_parada' | 'fin_de_ruta'; stop: Stop | null } | null;
@@ -43,7 +52,7 @@ export function primaryAction(state: DriverState, stops: Stop[]): PrimaryAction 
   const upcoming = nextStop(stops, state.currentStopId);
   switch (state.status) {
     case 'scheduled':
-      return { type: 'en_camino', stop: null };
+      return upcoming ? { type: 'en_parada', stop: upcoming } : { type: 'en_camino', stop: null };
     case 'en_parada':
       return upcoming ? { type: 'en_camino', stop: null } : { type: 'fin_de_ruta', stop: null };
     case 'en_camino':

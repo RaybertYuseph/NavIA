@@ -166,7 +166,7 @@ function LiveTripCard({ trip, now, selected, onSelect }: { trip: Trip; now: numb
         </div>
         <p className="mt-1 flex items-center gap-1 text-sm font-medium">
           <Icon name="pin" className="h-4 w-4 text-brand-500" />
-          {trip.status === 'en_parada' && here ? `En ${here.name}` : upcoming ? `Va hacia ${upcoming.name}` : 'Llegando a destino'}
+          {trip.status === 'en_parada' && here ? `Cargando en ${here.name}` : upcoming ? `Va hacia ${upcoming.name}` : 'Llegando a destino'}
         </p>
         <p className="mt-0.5 text-xs text-slate-500">
           Salió {formatHour(trip.started_at ?? trip.scheduled_at)} · ubicación {timeAgo(trip.last_seen_at, now)}

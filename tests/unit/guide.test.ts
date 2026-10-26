@@ -26,7 +26,8 @@ const now = new Date('2026-10-18T07:20:00-04:00').getTime();
 
 describe('botón principal del conductor', () => {
   it('muestra solo el paso que sigue', () => {
-    expect(primaryAction({ status: 'scheduled', currentStopId: null }, stops)).toEqual({ type: 'en_camino', stop: null });
+    expect(primaryAction({ status: 'scheduled', currentStopId: null }, stops)).toEqual({ type: 'en_parada', stop: stops[0] });
+    expect(primaryAction({ status: 'scheduled', currentStopId: null }, [])).toEqual({ type: 'en_camino', stop: null });
     expect(primaryAction({ status: 'en_camino', currentStopId: null }, stops)).toEqual({ type: 'en_parada', stop: stops[0] });
     expect(primaryAction({ status: 'en_parada', currentStopId: 's2' }, stops)).toEqual({ type: 'en_camino', stop: null });
     expect(primaryAction({ status: 'en_parada', currentStopId: 's3' }, stops)).toEqual({ type: 'fin_de_ruta', stop: null });

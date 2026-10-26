@@ -37,7 +37,7 @@ export const TRIP_SELECT =
 export const STATUS_LABEL: Record<TripStatus, string> = {
   scheduled: 'Programada',
   en_camino: 'En camino',
-  en_parada: 'En parada',
+  en_parada: 'Cargando',
   finalizada: 'Finalizada',
   cancelada: 'Cancelada',
 };

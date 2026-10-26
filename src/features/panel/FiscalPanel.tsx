@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { Tabs } from '@/components/Tabs';
 import { fiscalTip, lineStatus, mostWaiting, staleUnits, type LineSummary } from '@/features/guide/answers';
 import { useGuide } from '@/features/guide/GuideProvider';
@@ -110,7 +111,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                       {trip.routes?.name} · {formatHour(trip.scheduled_at)}
                     </p>
                     <p className="text-sm text-slate-600">
-                      {trip.driver_id && props.drivers[trip.driver_id]} · {currentStop(trip)?.name ?? 'Saliendo'}
+                      {trip.driver_id && props.drivers[trip.driver_id]} ·{' '}
+                      {trip.status === 'en_parada' && currentStop(trip) ? `Cargando en ${currentStop(trip)!.name}` : (currentStop(trip)?.name ?? 'Saliendo')}
                     </p>
                     <p className="text-xs text-slate-500">
                       Ubicación {timeAgo(trip.last_seen_at, now)}
@@ -284,9 +286,10 @@ function PhotoUploader({ vehicle }: { vehicle: Vehicle }) {
 function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
 
   async function reset() {
-    if (!confirm('¿Reiniciar la demo? Todas las salidas de hoy vuelven a "Programada".')) return;
+    setAsking(false);
     setBusy(true);
     const { data, error } = await createClient().rpc('reset_demo_today');
     setBusy(false);
@@ -297,10 +300,20 @@ function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
   return (
     <section className="flex flex-wrap items-center gap-3 rounded-3xl border border-dashed border-slate-300 p-4">
       <p className="flex-1 text-sm text-slate-600">Demo: deja las salidas de hoy como al inicio del día para repetir el recorrido.</p>
-      <button type="button" disabled={busy} onClick={reset} className="rounded-xl bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+      <button type="button" disabled={busy} onClick={() => setAsking(true)} className="btn-ghost px-4 py-2 text-sm disabled:opacity-50">
         {busy ? 'Reiniciando…' : 'Reiniciar demo'}
       </button>
-      {message && <p className="text-sm text-slate-700">{message}</p>}
+      {message && <p className="w-full text-sm font-medium text-slate-700">{message}</p>}
+      {asking && (
+        <ConfirmSheet
+          title="¿Reiniciar la demo?"
+          body="Todas las salidas de hoy vuelven a «Programada» y se borran las esperas marcadas."
+          confirmLabel="Sí, reiniciar"
+          cancelLabel="Cancelar"
+          onConfirm={() => void reset()}
+          onCancel={() => setAsking(false)}
+        />
+      )}
     </section>
   );
 }

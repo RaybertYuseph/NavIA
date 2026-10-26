@@ -68,11 +68,13 @@ export function fareInfo(trips: Trip[]): NaviaAnswer {
 export function driverTip(status: TripStatus, upcoming: Stop | null) {
   switch (status) {
     case 'scheduled':
-      return '¡Epa! Cuando arranques toca el botón grande y aviso a los estudiantes.';
+      return upcoming
+        ? `¡Epa! Cuando estés en ${upcoming.name} para cargar, toca «Llegué». Así aviso a los estudiantes.`
+        : '¡Epa! Cuando arranques toca el botón grande y aviso a los estudiantes.';
     case 'en_camino':
-      return upcoming ? `Vas hacia ${upcoming.name}. Cuando llegues, toca «Llegué».` : 'Ya no quedan paradas. Cuando llegues, termina la ruta.';
+      return upcoming ? `Próxima parada: ${upcoming.name}. Cuando llegues, toca «Llegué».` : 'Ya no quedan paradas. Cuando llegues, termina la ruta.';
     case 'en_parada':
-      return 'Cuando suban todos, toca «Seguir ruta».';
+      return 'Estás cargando. Cuando suban todos, toca «Ya subieron todos».';
     default:
       return '¡Buen trabajo! Esta salida ya terminó.';
   }

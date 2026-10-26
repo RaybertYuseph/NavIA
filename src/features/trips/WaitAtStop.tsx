@@ -141,7 +141,7 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         <Card>
           <p className="text-lg font-bold">🚌 ¡Llegó tu camioneta a {mine?.name}!</p>
           <p className="text-sm text-slate-600">¡Buen viaje, pana!</p>
-          <button type="button" onClick={() => setWait(null)} className="mt-3 text-sm font-semibold text-brand-700">
+          <button type="button" onClick={() => setWait(null)} className="btn-ghost mt-3 w-full">
             Marcar otra parada
           </button>
         </Card>
@@ -189,50 +189,79 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
   return (
     <Card>
       <form
-        className="flex flex-col gap-2"
+        className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
           if (chosen) void markHere(chosen);
         }}
       >
-        <label className="text-sm font-medium text-slate-600">
-          Salida
-          <select
-            className="field"
-            value={trip.id}
-            onChange={(e) => {
-              setTripId(e.target.value);
-              setStopId('');
-            }}
-          >
-            {open.map((t) => (
-              <option key={t.id} value={t.id}>
-                {formatHour(t.scheduled_at)} · {t.routes?.name}
-                {isLive(t) ? ' · en camino' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm font-medium text-slate-600">
-          ¿En qué parada estás?
-          <select
-            className="field"
-            value={stopId}
-            onChange={(e) => setStopId(e.target.value)}
-            required
-          >
-            <option value="">Elige tu parada</option>
-            {choices.map((s) => {
-              const n = trip.waiting?.[s.id] ?? 0;
+        <fieldset>
+          <legend className="text-sm font-semibold text-slate-600">Salida</legend>
+          <div className="-mx-4 mt-1.5 flex gap-2 overflow-x-auto px-4 pb-1">
+            {open.map((t) => {
+              const active = t.id === trip.id;
               return (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                  {n > 0 ? ` · ${n} esperando` : ''}
-                </option>
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setTripId(t.id);
+                    setStopId('');
+                    setError(null);
+                  }}
+                  className={`shrink-0 rounded-2xl px-3.5 py-2 text-left transition active:scale-[0.98] ${
+                    active ? 'bg-ink text-white shadow-lg shadow-ink/20' : 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'
+                  }`}
+                >
+                  <span className="block text-lg leading-tight font-extrabold">{formatHour(t.scheduled_at)}</span>
+                  <span className={`block max-w-36 truncate text-xs ${active ? 'text-white/80' : 'text-slate-500'}`}>
+                    {isLive(t) ? '● En camino · ' : ''}
+                    {t.routes?.name}
+                  </span>
+                </button>
               );
             })}
-          </select>
-        </label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="text-sm font-semibold text-slate-600">¿En qué parada estás?</legend>
+          {choices.length === 0 ? (
+            <p className="mt-1.5 text-sm text-slate-500">La camioneta ya pasó por todas las paradas de esta salida.</p>
+          ) : (
+            <ul className="mt-1.5 flex flex-col gap-1.5">
+              {choices.map((s) => {
+                const n = trip.waiting?.[s.id] ?? 0;
+                const active = s.id === stopId;
+                return (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => {
+                        setStopId(s.id);
+                        setError(null);
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition active:scale-[0.99] ${
+                        active ? 'bg-brand-50 ring-2 ring-brand-400' : 'bg-slate-50 ring-1 ring-slate-200'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${active ? 'bg-brand-500 text-white' : 'bg-white text-slate-500 ring-1 ring-slate-200'}`}
+                      >
+                        {active ? '✓' : s.seq}
+                      </span>
+                      <span className={`flex-1 ${active ? 'font-bold text-ink' : 'font-medium text-slate-700'}`}>{s.name}</span>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${n > 0 ? 'bg-cyan-100 text-cyan-800' : 'bg-white text-slate-400'}`}>
+                        {n} esperando
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </fieldset>
         <button
           type="submit"
           disabled={!!busy || !chosen}

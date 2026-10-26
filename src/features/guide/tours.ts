@@ -33,7 +33,7 @@ export const TOURS: Record<View, TourStep[]> = {
   driver: [
     { target: 'unidad', title: 'Tu unidad', body: 'Activa «Disponible» cuando tu camioneta esté lista para salir. El fiscal lo ve al instante.' },
     { target: 'salidas', title: 'Tus salidas de hoy', body: 'Elige la salida que vas a hacer. Arranca con la más próxima.' },
-    { target: 'accion', title: 'Un solo botón', body: 'Siempre te muestro el paso que sigue: arrancar, llegué a la parada o terminar la ruta. Tócalo y listo.' },
+    { target: 'accion', title: 'Un solo botón', body: 'Siempre te muestro el paso que sigue: «Llegué» al llegar a la parada, «Ya subieron todos» al terminar de cargar y «Terminar ruta» al final. Tócalo y listo.' },
     { target: 'paradas', title: 'Quién te espera', body: 'En cada parada ves cuántos estudiantes están esperando, para que no dejes a nadie.' },
     { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Si se va la señal, guardo tus avisos y los envío apenas vuelva. Tócame si tienes una duda.' },
   ],

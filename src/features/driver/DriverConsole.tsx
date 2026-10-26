@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { ConfirmSheet } from '@/components/ConfirmSheet';
 import { Icon } from '@/components/icons';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { NO_SIGNAL, driverTip, waitingAhead } from '@/features/guide/answers';
@@ -10,7 +11,7 @@ import { AvailabilityToggle } from './AvailabilityToggle';
 import type { TripEventType } from '@/lib/offline/types';
 import { formatHour } from '@/lib/time';
 import { STATUS_LABEL, STATUS_STYLE, sortedStops, type Trip } from '@/features/trips/types';
-import { applyEvent, nextStop, primaryAction, type DriverState } from './state';
+import { applyEvent, driverPhase, nextStop, primaryAction, type DriverState } from './state';
 import { useGps, type GpsState } from './useGps';
 import { useWaiting } from './useWaiting';
 import { useWakeLock } from './useWakeLock';
@@ -91,10 +92,18 @@ export function DriverConsole({ trips }: { trips: Trip[] }) {
           </div>
         </section>
       )}
-      <TripControls key={trip.id} trip={trip} />
+      <TripControls key={trip.id} trip={trip} next={nextTrip(trips, trip)} onGo={setTripId} />
     </div>
   );
 }
+
+/** La salida que sigue a esta (o la primera abierta), para ofrecerla al terminar la ruta. */
+function nextTrip(trips: Trip[], current: Trip) {
+  const open = trips.filter((t) => t.id !== current.id && t.status !== 'finalizada' && t.status !== 'cancelada');
+  return open.find((t) => t.scheduled_at > current.scheduled_at) ?? open[0] ?? null;
+}
+
+const PHASES = ['Llegué', 'Cargando', 'En camino'] as const;
 
 const ACTION_STYLE = {
   en_camino: 'from-emerald-500 to-teal-500 shadow-emerald-500/40',
@@ -102,10 +111,11 @@ const ACTION_STYLE = {
   fin_de_ruta: 'from-ink to-indigo-800 shadow-ink/30',
 } as const;
 
-function TripControls({ trip }: { trip: Trip }) {
+function TripControls({ trip, next, onGo }: { trip: Trip; next: Trip | null; onGo: (tripId: string) => void }) {
   const stops = useMemo(() => sortedStops(trip), [trip]);
   const [state, setState] = useState<DriverState>({ status: trip.status, currentStopId: trip.current_stop_id });
   const [pending, setPending] = useState(0);
+  const [confirmEnd, setConfirmEnd] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,7 +138,7 @@ function TripControls({ trip }: { trip: Trip }) {
   const totalAhead = stops.slice(currentIdx + 1).reduce((a, s) => a + waitingAt(s.id), 0);
 
   async function send(type: TripEventType, stopId: string | null = null) {
-    if (type === 'fin_de_ruta' && !confirm('¿Terminar la ruta?')) return;
+    setConfirmEnd(false);
     const next = applyEvent(state, type, stopId);
     const at = new Date().toISOString();
     setState(next);
@@ -137,15 +147,18 @@ function TripControls({ trip }: { trip: Trip }) {
     await enqueue({ kind: 'event', id: crypto.randomUUID(), trip_id: trip.id, type, stop_id: stopId, occurred_at: at });
   }
 
+  // Arriba del botón, dónde está y qué sigue; el botón dice lo que el conductor acaba de hacer.
+  const atStop = stops[currentIdx];
   const label = !action
     ? null
     : action.type === 'en_parada'
-      ? { top: 'Llegué a', main: action.stop?.name ?? '' }
+      ? { top: state.status === 'scheduled' ? `Parada de salida: ${action.stop?.name}` : `Próxima parada: ${action.stop?.name}`, main: `Llegué a ${action.stop?.name}` }
       : action.type === 'fin_de_ruta'
-        ? { top: 'Última parada lista', main: 'Terminar ruta' }
+        ? { top: atStop ? `En ${atStop.name} · última parada` : 'Ruta completa', main: 'Terminar ruta' }
         : state.status === 'en_parada'
-          ? { top: 'Ya subieron todos', main: 'Seguir ruta' }
+          ? { top: `Cargando en ${atStop?.name ?? 'la parada'}`, main: 'Ya subieron todos' }
           : { top: 'Cuando arranques', main: '¡En camino!' };
+  const onPrimary = () => (action?.type === 'fin_de_ruta' ? setConfirmEnd(true) : action && void send(action.type, action.stop?.id ?? null));
 
   return (
     <>
@@ -177,10 +190,30 @@ function TripControls({ trip }: { trip: Trip }) {
       </section>
 
       <div data-tour="accion" className="flex flex-col gap-2">
+        {action && label && (
+          <ol className="flex items-center gap-1.5 px-1 text-xs font-bold" aria-label="Paso actual">
+            {PHASES.map((p, i) => {
+              const phase = driverPhase(state.status);
+              const now = i === phase;
+              const done = i < phase;
+              return (
+                <li key={p} className="flex flex-1 items-center gap-1.5" aria-current={now ? 'step' : undefined}>
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${done ? 'bg-emerald-500 text-white' : now ? 'bg-brand-500 text-white ring-4 ring-brand-100' : 'bg-slate-200 text-slate-500'}`}
+                  >
+                    {done ? '✓' : i + 1}
+                  </span>
+                  <span className={now ? 'text-brand-700' : done ? 'text-slate-600' : 'text-slate-400'}>{p}</span>
+                  {i < PHASES.length - 1 && <span className={`h-0.5 flex-1 rounded ${done ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
+                </li>
+              );
+            })}
+          </ol>
+        )}
         {action && label ? (
           <button
             type="button"
-            onClick={() => void send(action.type, action.stop?.id ?? null)}
+            onClick={onPrimary}
             className={`${ACTION_STYLE[action.type]} min-h-28 rounded-[1.75rem] bg-linear-to-br px-5 py-4 text-left text-white shadow-xl transition active:scale-[0.98]`}
           >
             <span className="block text-sm font-semibold opacity-90">{label.top}</span>
@@ -188,21 +221,44 @@ function TripControls({ trip }: { trip: Trip }) {
             {action.type === 'en_parada' && (
               <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/25 px-3 py-1 text-sm font-bold">
                 <Icon name="users" className="h-4 w-4" />
-                {waitingAt(action.stop?.id) === 0 ? 'Nadie marcó esta parada' : `${waitingAt(action.stop?.id)} esperando aquí`}
+                {waitingAt(action.stop?.id) === 0 ? 'Nadie marcó esta parada' : `${waitingAt(action.stop?.id)} esperando ahí`}
               </span>
             )}
           </button>
         ) : (
-          <p className="card rounded-3xl p-4 text-center font-semibold text-slate-600">
-            {state.status === 'finalizada' ? '¡Ruta terminada! Buen trabajo.' : 'Esta salida fue cancelada.'}
-          </p>
+          <div className="card flex flex-col items-center gap-2 rounded-3xl p-5 text-center">
+            <NaviaAgent size={72} animated mood={state.status === 'finalizada' ? 'happy' : 'idle'} />
+            <p className="text-lg font-extrabold">{state.status === 'finalizada' ? '¡Ruta terminada! Buen trabajo.' : 'Esta salida fue cancelada.'}</p>
+            {next ? (
+              <button type="button" onClick={() => onGo(next.id)} className="btn-primary mt-1 w-full">
+                Ir a mi próxima salida: {formatHour(next.scheduled_at)}
+              </button>
+            ) : (
+              <p className="text-sm text-slate-600">No te quedan más salidas hoy.</p>
+            )}
+          </div>
         )}
         {active && action?.type !== 'fin_de_ruta' && (
-          <button type="button" onClick={() => void send('fin_de_ruta')} className="self-center px-3 py-2 text-sm font-semibold text-slate-500">
+          <button type="button" onClick={() => setConfirmEnd(true)} className="btn-ghost self-center px-4 py-2 text-sm">
             Terminar la ruta antes
           </button>
         )}
       </div>
+
+      {confirmEnd && (
+        <ConfirmSheet
+          title="¿Terminar la ruta?"
+          body={
+            action?.type === 'fin_de_ruta'
+              ? 'Aviso a los estudiantes y al fiscal que esta salida terminó.'
+              : `Todavía te faltan paradas${totalAhead > 0 ? ` y ${totalAhead} ${totalAhead === 1 ? 'estudiante espera' : 'estudiantes esperan'}` : ''}. ¿Seguro que quieres terminar ya?`
+          }
+          confirmLabel="Sí, terminar"
+          cancelLabel="Seguir en ruta"
+          onConfirm={() => void send('fin_de_ruta')}
+          onCancel={() => setConfirmEnd(false)}
+        />
+      )}
 
       <section data-tour="paradas" className="card rounded-3xl p-4" aria-label="Paradas">
         <h3 className="section-title">Paradas</h3>
