@@ -41,6 +41,7 @@ export const TOURS: Record<View, TourStep[]> = {
     { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Tócame cuando tengas una duda. Y cuando quieras, repite este recorrido desde tu menú.' },
   ],
   driver: [
+    { scene: 'driver-pain', title: 'Así es hoy', body: 'Manejas y a la vez respondes el grupo: dónde vienes, cuál es la próxima parada, si ya pasaste. Y revisas uno por uno en el banco los pagos móviles que te mandan en captura. NavIA hace eso por ti.' },
     { scene: 'driver-available', title: 'Avisa que estás listo', body: 'En la parada de salida escribes a qué hora sales y tocas «Estoy disponible». En ese momento el fiscal y los estudiantes ven tu salida, sin un solo mensaje.' },
     { target: 'unidad', title: 'Tu unidad y tu hora', body: 'Aquí lo haces de verdad: tu unidad, la hora de salida y el botón «Estoy disponible».' },
     { target: 'salidas', title: 'Tus salidas de hoy', body: 'Aquí está la salida que confirmaste. Si cambias de plan, toca «Cambiar hora de salida».' },
@@ -48,6 +49,8 @@ export const TOURS: Record<View, TourStep[]> = {
     { target: 'accion', title: 'Tu botón', body: 'Este es el botón real. Grande, para tocarlo con el teléfono en el soporte.' },
     { target: 'paradas', title: 'Quién te espera', body: 'En cada parada ves cuántos estudiantes están esperando, para que no dejes a nadie.' },
     { scene: 'driver-offline', title: 'Sin señal, sin problema', body: 'Si te quedas sin señal en la vía, guardo tus avisos en el teléfono y los envío solos apenas vuelva, con la hora real de cada parada.' },
+    { scene: 'driver-qr', title: 'Cobra con un QR (próximamente)', body: 'Cada estudiante tendrá su QR. Lo escaneas cuando sube: si pagó, ves ✓ con su nombre; si ese QR ya se usó o no tiene pasajes, te aviso. Sin capturas de pago móvil que revisar.' },
+    { scene: 'driver-wallet', title: 'Tu cierre del día (próximamente)', body: 'Al final del día ves cuántos pasajes cobraste, el total, la comisión y el neto, salida por salida. Con un toque lo pasas a tu cuenta, y cada pago queda validado.' },
     { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Tócame si tienes una duda. Puedes repetir este recorrido desde tu menú.' },
   ],
   fiscal: [

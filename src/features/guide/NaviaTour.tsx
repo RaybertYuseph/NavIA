@@ -9,8 +9,8 @@ import { startDemoSimulation } from './demoSim';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
 import { useTypewriter } from './useTypewriter';
 
-// v3: el tour suma simulaciones del flujo completo; quien vio el anterior lo ve de nuevo.
-const seenKey = (userId: string) => `navia:tour:v3:${userId}`;
+// v4: el tour del conductor suma el día de hoy por WhatsApp y el cobro con QR; quien vio el anterior lo ve de nuevo.
+const seenKey = (userId: string) => `navia:tour:v4:${userId}`;
 // En la demo se recuerda solo mientras el navegador esté abierto: cada presentación empieza con el tour.
 const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
 const seenStore = () => (DEMO ? sessionStorage : localStorage);
