@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
+import { readAudience } from '@/features/auth/demoAccess';
+import { DemoSurveyCard } from './DemoSurveyCard';
 import { startDemoSimulation } from './demoSim';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
 import { useTypewriter } from './useTypewriter';
@@ -38,8 +40,11 @@ function findTarget(name: string) {
   return [...document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`)].find((el) => el.getClientRects().length > 0) ?? null;
 }
 
-/** 'prep': en la demo, NavIA prepara salidas de ejemplo antes de empezar el recorrido. */
-type Phase = 'ask' | 'prep' | number | null;
+/**
+ * 'prep': en la demo, NavIA prepara salidas de ejemplo antes de empezar el recorrido.
+ * 'survey': al terminar el recorrido en un enlace de demo, pide la encuesta de ese público.
+ */
+type Phase = 'ask' | 'prep' | 'survey' | number | null;
 type Box = { top: number; left: number; width: number; height: number };
 type Spot = { x: number; y: number; card: React.CSSProperties };
 
@@ -189,23 +194,34 @@ export function NaviaTour(props: {
     };
   }, [step, onTab, walkTo]);
 
-  const finish = useCallback(() => {
-    markSeen(userId);
-    if (typeof phase === 'number') onTab(DEFAULT_TAB[view]);
+  const close = useCallback(() => {
     setPhaseRaw(null);
     onClose();
-  }, [userId, phase, onTab, view, onClose]);
+  }, [onClose]);
+
+  const finish = useCallback(() => {
+    markSeen(userId);
+    if (typeof phase === 'number') {
+      onTab(DEFAULT_TAB[view]);
+      if (DEMO && readAudience()) return setPhaseRaw('survey');
+    }
+    close();
+  }, [userId, phase, onTab, view, close]);
 
   useEffect(() => {
     if (phase === null) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && finish();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && (phase === 'survey' ? close() : finish());
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, finish]);
+  }, [phase, finish, close]);
 
   if (phase === null) return null;
   if (phase === 'ask') return <AskCard firstName={firstName} onYes={() => setPhase(DEMO ? 'prep' : 0)} onNo={finish} />;
   if (phase === 'prep') return <PrepCard />;
+  if (phase === 'survey') {
+    const audience = readAudience();
+    return audience ? <DemoSurveyCard view={view} audience={audience} onClose={close} /> : null;
+  }
 
   const i = phase;
   const isLast = i === steps.length - 1;

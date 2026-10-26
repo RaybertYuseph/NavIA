@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { readAudience } from './demoAccess';
 
 /**
  * Salir desde el navegador, con respuesta inmediata ("Saliendo…") en vez de esperar al
@@ -18,7 +19,9 @@ export function useLeave(scope: 'local' | 'global') {
     } catch {
       /* sin red: igual se vuelve al inicio; la sesión local ya se borró */
     }
-    router.replace('/login');
+    // Quien entró por un enlace de demo vuelve a ese enlace, no a la entrada con los tres roles.
+    const audience = process.env.NEXT_PUBLIC_DEMO === '1' ? readAudience() : null;
+    router.replace(audience ? `/demo/${audience}` : '/login');
     router.refresh();
   }, [router, scope]);
   return { leaving, leave };
