@@ -320,7 +320,8 @@ function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
     setBusy(true);
     const { data, error } = await createClient().rpc('reset_demo_today');
     setBusy(false);
-    setMessage(error ? 'No se pudo reiniciar.' : `Listo: día reiniciado (${data} ${data === 1 ? 'salida borrada' : 'salidas borradas'}).`);
+    // El detalle del error ayuda a saber qué migración falta en Supabase.
+    setMessage(error ? `No se pudo reiniciar: ${error.message}` : `Listo: día reiniciado (${data} ${data === 1 ? 'salida borrada' : 'salidas borradas'}).`);
     await onDone();
   }
 

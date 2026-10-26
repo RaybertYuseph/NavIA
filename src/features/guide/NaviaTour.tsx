@@ -4,7 +4,11 @@ import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
 import { useTypewriter } from './useTypewriter';
 
-const seenKey = (userId: string) => `navia:tour:v1:${userId}`;
+// v2: el tour cambió con la hora de salida que pone el conductor; quien vio el anterior lo ve de nuevo.
+const seenKey = (userId: string) => `navia:tour:v2:${userId}`;
+// En la demo se recuerda solo mientras el navegador esté abierto: cada presentación empieza con el tour.
+const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
+const seenStore = () => (DEMO ? sessionStorage : localStorage);
 const NAV_W = 84;
 const NAV_H = Math.round((NAV_W * 522) / 430);
 const WALK_MS = 900;
@@ -13,7 +17,7 @@ const CARD_H = 190;
 
 function readSeen(userId: string) {
   try {
-    return localStorage.getItem(seenKey(userId)) === '1';
+    return seenStore().getItem(seenKey(userId)) === '1';
   } catch {
     return true; // Sin almacenamiento no se puede recordar: mejor no insistir en cada visita.
   }
@@ -21,7 +25,7 @@ function readSeen(userId: string) {
 
 function markSeen(userId: string) {
   try {
-    localStorage.setItem(seenKey(userId), '1');
+    seenStore().setItem(seenKey(userId), '1');
   } catch {
     /* sin almacenamiento: el tour sigue disponible desde el menú */
   }
@@ -82,8 +86,20 @@ export function NaviaTour(props: {
   onClose: () => void;
 }) {
   const { view, userId, firstName, manual, onTab, onTouring, onClose } = props;
-  const steps = TOURS[view];
-  const [phase, setPhase] = useState<Phase>(manual ? (manual.ask ? 'ask' : 0) : null);
+  // Solo los pasos cuyo elemento está en pantalla (o aparece al abrir su pestaña): sin salida a su
+  // cargo el conductor no tiene botón de acción ni paradas que mostrar.
+  const [steps, setSteps] = useState(() => TOURS[view]);
+  const [phase, setPhaseRaw] = useState<Phase>(manual ? (manual.ask ? 'ask' : 0) : null);
+  const setPhase = useCallback(
+    (p: Phase) => {
+      if (p === 0) setSteps(TOURS[view].filter((s) => !s.target || s.tab || findTarget(s.target)));
+      setPhaseRaw(p);
+    },
+    [view],
+  );
+  useEffect(() => {
+    if (manual && !manual.ask) setSteps(TOURS[view].filter((s) => !s.target || s.tab || findTarget(s.target)));
+  }, [manual, view]);
   const [box, setBox] = useState<Box | null>(null);
   const [spot, setSpot] = useState<Spot | null>(null);
   const [walking, setWalking] = useState(false);
@@ -94,7 +110,7 @@ export function NaviaTour(props: {
   // Automático: solo la primera vez de esta cuenta en este teléfono.
   useEffect(() => {
     if (manual || readSeen(userId)) return;
-    const t = setTimeout(() => setPhase('ask'), 700);
+    const t = setTimeout(() => setPhaseRaw('ask'), 700);
     return () => clearTimeout(t);
   }, [manual, userId]);
 
@@ -156,7 +172,7 @@ export function NaviaTour(props: {
   const finish = useCallback(() => {
     markSeen(userId);
     if (typeof phase === 'number') onTab(DEFAULT_TAB[view]);
-    setPhase(null);
+    setPhaseRaw(null);
     onClose();
   }, [userId, phase, onTab, view, onClose]);
 
