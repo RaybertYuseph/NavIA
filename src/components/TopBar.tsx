@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { NaviaLogo } from '@/features/brand/NaviaAgent';
+import { readAudience } from '@/features/auth/demoAccess';
 import { useLeave } from '@/features/auth/useLeave';
 import { useGuide } from '@/features/guide/GuideProvider';
 import { Icon } from './icons';
@@ -12,9 +13,12 @@ const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
  * botón visible "Inicio demo" para volver a elegir rol sin abrir el menú.
  */
 export function TopBar({ name, role, wide }: { name: string; role: string; wide: boolean }) {
-  const { startTour } = useGuide();
+  const { startTour, openSurvey } = useGuide();
   const { leaving, leave } = useLeave(DEMO ? 'local' : 'global');
   const [open, setOpen] = useState(false);
+  // Encuesta solo para quien entró por un enlace de demo (se lee después de montar: vive en el navegador).
+  const [survey, setSurvey] = useState(false);
+  useEffect(() => setSurvey(DEMO && readAudience() !== null), []);
   const menu = useRef<HTMLDivElement>(null);
   const initials = name
     .split(/\s+/)
@@ -73,6 +77,19 @@ export function TopBar({ name, role, wide }: { name: string; role: string; wide:
               >
                 <Icon name="sparkle" className="h-5 w-5 text-brand-500" /> Ver el recorrido de NavIA
               </button>
+              {survey && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    openSurvey();
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50"
+                >
+                  <Icon name="list" className="h-5 w-5 text-brand-500" /> Responder la encuesta
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"

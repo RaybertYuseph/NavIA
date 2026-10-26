@@ -2,12 +2,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
+import { readAudience } from '@/features/auth/demoAccess';
+import { DemoSurveyCard } from './DemoSurveyCard';
+import { TourScene } from './TourScenes';
 import { startDemoSimulation } from './demoSim';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
 import { useTypewriter } from './useTypewriter';
 
-// v2: el tour cambió con la hora de salida que pone el conductor; quien vio el anterior lo ve de nuevo.
-const seenKey = (userId: string) => `navia:tour:v2:${userId}`;
+// v3: el tour suma simulaciones del flujo completo; quien vio el anterior lo ve de nuevo.
+const seenKey = (userId: string) => `navia:tour:v3:${userId}`;
 // En la demo se recuerda solo mientras el navegador esté abierto: cada presentación empieza con el tour.
 const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
 const seenStore = () => (DEMO ? sessionStorage : localStorage);
@@ -38,8 +41,11 @@ function findTarget(name: string) {
   return [...document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`)].find((el) => el.getClientRects().length > 0) ?? null;
 }
 
-/** 'prep': en la demo, NavIA prepara salidas de ejemplo antes de empezar el recorrido. */
-type Phase = 'ask' | 'prep' | number | null;
+/**
+ * 'prep': en la demo, NavIA prepara salidas de ejemplo antes de empezar el recorrido.
+ * 'survey': al terminar el recorrido en un enlace de demo, pide la encuesta de ese público.
+ */
+type Phase = 'ask' | 'prep' | 'survey' | number | null;
 type Box = { top: number; left: number; width: number; height: number };
 type Spot = { x: number; y: number; card: React.CSSProperties };
 
@@ -87,8 +93,9 @@ export function NaviaTour(props: {
   onTab: (tab: string) => void;
   onTouring: (on: boolean) => void;
   onClose: () => void;
+  onSurvey: () => void;
 }) {
-  const { view, userId, firstName, manual, onTab, onTouring, onClose } = props;
+  const { view, userId, firstName, manual, onTab, onTouring, onClose, onSurvey } = props;
   // Solo los pasos cuyo elemento está en pantalla (o aparece al abrir su pestaña): sin salida a su
   // cargo el conductor no tiene botón de acción ni paradas que mostrar.
   const [steps, setSteps] = useState(() => TOURS[view]);
@@ -189,26 +196,74 @@ export function NaviaTour(props: {
     };
   }, [step, onTab, walkTo]);
 
-  const finish = useCallback(() => {
-    markSeen(userId);
-    if (typeof phase === 'number') onTab(DEFAULT_TAB[view]);
+  const close = useCallback(() => {
     setPhaseRaw(null);
     onClose();
-  }, [userId, phase, onTab, view, onClose]);
+  }, [onClose]);
+
+  const finish = useCallback(() => {
+    markSeen(userId);
+    if (typeof phase === 'number') {
+      onTab(DEFAULT_TAB[view]);
+      if (DEMO && readAudience()) return setPhaseRaw('survey');
+    }
+    close();
+  }, [userId, phase, onTab, view, close]);
 
   useEffect(() => {
     if (phase === null) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && finish();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && (phase === 'survey' ? close() : finish());
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, finish]);
+  }, [phase, finish, close]);
 
   if (phase === null) return null;
   if (phase === 'ask') return <AskCard firstName={firstName} onYes={() => setPhase(DEMO ? 'prep' : 0)} onNo={finish} />;
   if (phase === 'prep') return <PrepCard />;
+  if (phase === 'survey') {
+    const audience = readAudience();
+    return audience ? (
+      <DemoSurveyCard
+        view={view}
+        audience={audience}
+        onAnswer={() => {
+          close();
+          onSurvey();
+        }}
+        onClose={close}
+      />
+    ) : null;
+  }
 
   const i = phase;
   const isLast = i === steps.length - 1;
+  const controls = {
+    title: steps[i].title,
+    body: steps[i].body,
+    index: i,
+    total: steps.length,
+    onBack: i > 0 ? () => setPhase(i - 1) : undefined,
+    onNext: () => (isLast ? finish() : setPhase(i + 1)),
+    onSkip: isLast ? undefined : finish,
+    isLast,
+    onDone: () => setSpoken(i),
+  };
+
+  // Simulación: pantalla de ejemplo animada y, debajo, NavIA con la explicación.
+  if (step?.scene) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-ink/60 p-3 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+        <div key={i} className="tour-pop flex w-full max-w-sm flex-col gap-3">
+          <TourScene name={step.scene} />
+          <div className="relative">
+            <NaviaAgent size={64} animated talking={spoken !== phase} className="pointer-events-none absolute -top-12 right-3 z-10" />
+            <StepCard {...controls} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="tour-title">
       {/* En el paso del botón de NavIA el botón está oculto (la NavIA del tour se para ahí): sin recuadro vacío. */}
@@ -231,19 +286,7 @@ export function NaviaTour(props: {
       )}
 
       {spot && !walking && (
-        <StepCard
-          key={i}
-          style={spot.card}
-          title={steps[i].title}
-          body={steps[i].body}
-          index={i}
-          total={steps.length}
-          onBack={i > 0 ? () => setPhase(i - 1) : undefined}
-          onNext={() => (isLast ? finish() : setPhase(i + 1))}
-          onSkip={isLast ? undefined : finish}
-          isLast={isLast}
-          onDone={() => setSpoken(i)}
-        />
+        <StepCard key={i} style={spot.card} {...controls} />
       )}
     </div>
   );
@@ -287,7 +330,8 @@ function AskCard({ firstName, onYes, onNo }: { firstName: string; onYes: () => v
 }
 
 function StepCard(props: {
-  style: React.CSSProperties;
+  /** Posición junto al elemento señalado; sin ella la tarjeta va en el flujo (pasos con simulación). */
+  style?: React.CSSProperties;
   title: string;
   body: string;
   index: number;
@@ -305,7 +349,7 @@ function StepCard(props: {
     if (done) onDone.current();
   }, [done]);
   return (
-    <div className="tour-pop fixed rounded-3xl bg-white p-4 shadow-2xl" style={props.style} onClick={skip}>
+    <div className={`tour-pop rounded-3xl bg-white p-4 shadow-2xl ${props.style ? 'fixed' : 'relative'}`} style={props.style} onClick={skip}>
       <h2 id="tour-title" className="text-lg font-bold">
         {props.title}
       </h2>

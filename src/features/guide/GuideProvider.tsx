@@ -1,6 +1,8 @@
 'use client';
 import { createContext, useCallback, useContext, useState } from 'react';
+import { readAudience } from '@/features/auth/demoAccess';
 import { DEMO, DemoTicker } from './demoSim';
+import { DemoSurvey } from './DemoSurvey';
 import { NaviaTour } from './NaviaTour';
 import { DEFAULT_TAB, type View } from './tours';
 
@@ -13,6 +15,8 @@ type Guide = {
   startTour: (ask?: boolean) => void;
   /** El tour está abierto y NavIA camina por la pantalla (el botón flotante se oculta). */
   touring: boolean;
+  /** En un enlace de demo, abre la encuesta de 7 preguntas de ese público. */
+  openSurvey: () => void;
 };
 
 const GuideContext = createContext<Guide | null>(null);
@@ -28,6 +32,8 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
   const [tab, setTabState] = useState(DEFAULT_TAB[view]);
   const [tour, setTour] = useState<{ ask: boolean; key: number } | null>(null);
   const [touring, setTouring] = useState(false);
+  const [survey, setSurvey] = useState(false);
+  const openSurvey = useCallback(() => setSurvey(true), []);
 
   const setTab = useCallback((next: string) => {
     setTabState(next);
@@ -36,7 +42,7 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
   const startTour = useCallback((ask = false) => setTour({ ask, key: Date.now() }), []);
 
   return (
-    <GuideContext.Provider value={{ view, firstName, tab, setTab, startTour, touring }}>
+    <GuideContext.Provider value={{ view, firstName, tab, setTab, startTour, touring, openSurvey }}>
       {children}
       {DEMO && <DemoTicker />}
       <NaviaTour
@@ -48,7 +54,14 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
         onTab={setTabState}
         onTouring={setTouring}
         onClose={() => setTour(null)}
+        onSurvey={openSurvey}
       />
+      {survey && <SurveyModal view={view} onClose={() => setSurvey(false)} />}
     </GuideContext.Provider>
   );
+}
+
+function SurveyModal({ view, onClose }: { view: View; onClose: () => void }) {
+  const audience = DEMO ? readAudience() : null;
+  return audience ? <DemoSurvey audience={audience} view={view} onClose={onClose} /> : null;
 }

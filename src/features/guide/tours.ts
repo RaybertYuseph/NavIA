@@ -1,4 +1,5 @@
 import type { Role } from '@/lib/profile';
+import type { SceneName } from './TourScenes';
 
 /** Vista de cada rol: la del fiscal también la usa el admin. */
 export type View = 'student' | 'driver' | 'fiscal';
@@ -15,33 +16,47 @@ export type TourStep = {
   target?: string;
   /** Pestaña que se abre antes de mostrar el paso. */
   tab?: string;
+  /** Simulación animada con datos de ejemplo (sin elemento que resaltar). */
+  scene?: SceneName;
   title: string;
   body: string;
 };
 
 export const DEFAULT_TAB: Record<View, string> = { student: 'inicio', driver: 'ruta', fiscal: 'resumen' };
 
-/** Recorrido corto por lo esencial de cada vista; el último paso presenta el botón de NavIA. */
+/**
+ * Recorrido de cada vista: los pasos con `scene` simulan el flujo completo con datos de ejemplo y
+ * los demás señalan la pantalla real. El último paso presenta el botón de NavIA.
+ */
 export const TOURS: Record<View, TourStep[]> = {
   student: [
-    { tab: 'inicio', target: 'proxima', title: 'Tu próxima salida', body: 'Aquí ves a qué hora sale la próxima camioneta, de qué ruta es y su foto para que la reconozcas.' },
-    { tab: 'inicio', target: 'espera', title: 'Marca tu parada', body: 'Ya en la parada, toca «Estoy aquí»: confirmo con tu GPS que estás a menos de 50 m. El conductor ve cuántos esperan y yo te aviso cuando llegue la camioneta.' },
-    { tab: 'envivo', target: 'tab-envivo', title: 'En vivo', body: 'En esta pestaña ves en el mapa dónde vienen las camionetas que ya arrancaron.' },
+    { tab: 'inicio', target: 'proxima', title: 'Tu próxima salida', body: 'Aquí ves a qué hora sale la próxima camioneta, de qué ruta es y su foto y placa para que la reconozcas al llegar.' },
+    { scene: 'student-mark', title: 'Así marcas tu parada', body: 'Ya en la parada, eliges tu salida y tu parada y tocas «Estoy aquí». Confirmo con tu GPS que estás a menos de 50 m y te sumo al contador que ve el conductor.' },
+    { tab: 'inicio', target: 'espera', title: 'Hazlo aquí', body: 'Este es el botón de verdad. Si no estás en una parada, en la demo puedes tocar «Simular que estoy en la parada».' },
+    { scene: 'student-approach', title: 'Te aviso cuando viene', body: 'Mientras esperas te digo a cuántas paradas viene. Cuando tu parada es la siguiente te llega un aviso al teléfono, y otro cuando la camioneta llega. Sin mirar el grupo.' },
+    { scene: 'student-live', title: 'Todas en el mapa', body: 'En «En vivo» ves cada camioneta que ya arrancó moviéndose por la ruta. Toca una para ver su foto, su placa, por dónde va y cuánto le falta.' },
+    { tab: 'envivo', target: 'tab-envivo', title: 'En vivo', body: 'Esta es la pestaña. Las camionetas de la demo se mueven solas, como en un día real.' },
     { tab: 'horarios', target: 'tab-horarios', title: 'Salidas confirmadas', body: 'Las salidas de hoy que un conductor ya confirmó desde la parada de salida, por ruta, con sus paradas y el pasaje.' },
-    { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Si tienes una duda, tócame. Te digo dónde viene tu camioneta, cuándo sale la próxima y cómo marcar tu parada.' },
+    { scene: 'student-ask', title: 'Pregúntame lo que sea', body: 'Escríbeme como le escribirías al grupo: «¿dónde viene?», «¿a qué hora sale la próxima?». Te respondo al momento con lo que está pasando en la ruta.' },
+    { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Tócame cuando tengas una duda. Y cuando quieras, repite este recorrido desde tu menú.' },
   ],
   driver: [
-    { target: 'unidad', title: 'Tu unidad y tu hora', body: 'En la parada de salida escribe a qué hora sales y toca «Estoy disponible». Esa salida la ven al instante el fiscal y los estudiantes.' },
+    { scene: 'driver-available', title: 'Avisa que estás listo', body: 'En la parada de salida escribes a qué hora sales y tocas «Estoy disponible». En ese momento el fiscal y los estudiantes ven tu salida, sin un solo mensaje.' },
+    { target: 'unidad', title: 'Tu unidad y tu hora', body: 'Aquí lo haces de verdad: tu unidad, la hora de salida y el botón «Estoy disponible».' },
     { target: 'salidas', title: 'Tus salidas de hoy', body: 'Aquí está la salida que confirmaste. Si cambias de plan, toca «Cambiar hora de salida».' },
-    { target: 'accion', title: 'Un solo botón', body: 'Siempre te muestro el paso que sigue: «Llegué» al llegar a la parada, «Ya subieron todos» al terminar de cargar y «Terminar ruta» al final. Tócalo y listo.' },
+    { scene: 'driver-route', title: 'Toda la ruta con un botón', body: 'Siempre te muestro el paso que sigue: «Llegué», «Ya subieron todos» y al final «Terminar ruta». Cuando llegas, aviso a los que esperan, el contador vuelve a 0 y cuento cuántos abordaron.' },
+    { target: 'accion', title: 'Tu botón', body: 'Este es el botón real. Grande, para tocarlo con el teléfono en el soporte.' },
     { target: 'paradas', title: 'Quién te espera', body: 'En cada parada ves cuántos estudiantes están esperando, para que no dejes a nadie.' },
-    { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Si se va la señal, guardo tus avisos y los envío apenas vuelva. Tócame si tienes una duda.' },
+    { scene: 'driver-offline', title: 'Sin señal, sin problema', body: 'Si te quedas sin señal en la vía, guardo tus avisos en el teléfono y los envío solos apenas vuelva, con la hora real de cada parada.' },
+    { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Tócame si tienes una duda. Puedes repetir este recorrido desde tu menú.' },
   ],
   fiscal: [
-    { tab: 'resumen', target: 'kpis', title: 'La línea de un vistazo', body: 'Cuántas unidades están en ruta, disponibles o fuera de servicio, cuántas salidas van y cuántos estudiantes esperan.' },
+    { scene: 'fiscal-live', title: 'La línea en vivo', body: 'Mientras los conductores tocan sus botones, el resumen se actualiza solo: unidades en ruta, disponibles, fuera de servicio y estudiantes esperando, con el mapa en vivo.' },
+    { tab: 'resumen', target: 'kpis', title: 'La línea de un vistazo', body: 'Este es el resumen real de la demo: cuántas unidades están en ruta, disponibles o fuera de servicio, cuántas salidas van y cuántos esperan.' },
     { tab: 'resumen', target: 'mapa', title: 'Mapa en vivo', body: 'Todas las unidades que están en ruta, con su ubicación en tiempo real.' },
-    { tab: 'unidades', target: 'tab-unidades', title: 'Unidades', body: 'Cada camioneta con su foto, su conductor y por dónde va. Puedes subir o cambiar la foto.' },
-    { tab: 'salidas', target: 'tab-salidas', title: 'Salidas por ruta', body: 'Las salidas del día con su estado y cuántos esperan. Aparecen cuando un conductor se activa en la parada de salida.' },
+    { scene: 'fiscal-departures', title: 'Salidas y alertas', body: 'Cada salida pasa sola de programada a cargando, en camino y finalizada. Si una unidad deja de enviar ubicación te aviso, para que llames al conductor.' },
+    { tab: 'salidas', target: 'tab-salidas', title: 'Salidas por ruta', body: 'Aquí están las salidas del día con su estado y cuántos esperan. Aparecen cuando un conductor se activa en la parada de salida.' },
+    { tab: 'unidades', target: 'tab-unidades', title: 'Unidades', body: 'Cada camioneta con su foto, su placa y su conductor. Puedes subir la foto o sacarla de servicio.' },
     { target: 'navia-fab', title: 'Aquí estoy yo', body: 'Tócame y te resumo cómo va la línea o te digo qué unidad dejó de enviar ubicación.' },
   ],
 };
