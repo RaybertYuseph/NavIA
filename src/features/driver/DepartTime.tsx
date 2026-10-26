@@ -50,7 +50,11 @@ export async function postAtStop(vehicleId: string, routeId: string, departIn: n
   if (res?.ok) return null;
   if (!res) return 'Sin señal: prueba cuando vuelva la conexión.';
   if (res.status === 501) return 'Falta aplicar la migración 0008 en Supabase.';
-  if (res.status === 409) return 'El fiscal marcó esta unidad fuera de servicio. Elige otra o avísale.';
+  if (res.status === 409) {
+    const { hint } = (await res.json().catch(() => ({}))) as { hint?: string };
+    if (hint === 'hora_ocupada') return 'No se pudo cambiar la hora: ya sale otra unidad de esta ruta a esa hora. Elige otra.';
+    return 'El fiscal marcó esta unidad fuera de servicio. Elige otra o avísale.';
+  }
   return 'No se pudo guardar. Prueba otra vez.';
 }
 

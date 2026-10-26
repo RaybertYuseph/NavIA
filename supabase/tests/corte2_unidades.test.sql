@@ -122,3 +122,24 @@ select pg_temp.assert((select set_available_at_stop(id, '00000000-0000-0000-0000
 select pg_temp.assert((select scheduled_at = date_trunc('minute', now()) + interval '20 minutes' from trips where id = (select trip from u)),
   '"Salgo en 20 min" corrige la hora de su salida');
 reset role;
+reset role;
+insert into trip_events (trip_id, type, stop_id, actor_id, client_event_id, occurred_at)
+select trip, 'en_parada', (select id from stops where route_id = '00000000-0000-0000-0000-000000000030' and seq = 1),
+       '00000000-0000-0000-0000-0000000000d1', gen_random_uuid(), now() from u;
+insert into trip_events (trip_id, type, actor_id, client_event_id, occurred_at, restore_status)
+select trip, 'correccion', '00000000-0000-0000-0000-0000000000d1', gen_random_uuid(), now() + interval '1 second', 'scheduled' from u;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
+select set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', 30) from u;
+select pg_temp.assert((select scheduled_at = date_trunc('minute', now()) + interval '30 minutes' from trips where id = (select trip from u)),
+  'tras deshacer "Llegué" se puede cambiar la hora');
+reset role;
+insert into trips (route_id, scheduled_at) values ('00000000-0000-0000-0000-000000000030', date_trunc('minute', now()) + interval '40 minutes');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
+do $$ begin
+  perform set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', 40) from u;
+  raise exception 'FALLO: se movió a una hora ocupada sin avisar';
+exception when unique_violation then raise notice 'ok: una hora ocupada en la ruta avisa en vez de no hacer nada';
+end $$;
+reset role;

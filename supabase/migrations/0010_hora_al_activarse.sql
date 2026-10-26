@@ -33,11 +33,13 @@ begin
   where driver_id = auth.uid() and vehicle_id = p_vehicle_id and status in ('scheduled', 'en_camino', 'en_parada')
     and (scheduled_at at time zone 'America/Caracas')::date = today
   order by scheduled_at limit 1;
-  if trip is not null and p_depart_in is not null then
-    update trips t set scheduled_at = target
-    where t.id = trip and t.status = 'scheduled' and t.scheduled_at <> target
-      and not exists (select 1 from trip_events e where e.trip_id = t.id)
-      and not exists (select 1 from trips o where o.route_id = t.route_id and o.scheduled_at = target);
+  -- (Un "Llegué" deshecho deja eventos pero la salida vuelve a programada: vale started_at.)
+  if trip is not null and p_depart_in is not null
+     and exists (select 1 from trips where id = trip and status = 'scheduled' and started_at is null and scheduled_at <> target) then
+    if exists (select 1 from trips o, trips t where t.id = trip and o.route_id = t.route_id and o.scheduled_at = target and o.id <> t.id) then
+      raise exception 'Ya hay otra salida de esa ruta a esa hora' using errcode = '23505', hint = 'hora_ocupada';
+    end if;
+    update trips set scheduled_at = target where id = trip;
   end if;
 
   if trip is null then

@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   // Sin la migración 0010 la función no recibe la hora: sale ahora.
   if (error?.code === 'PGRST202') ({ data, error } = await supabase.rpc('set_available_at_stop', args));
   if (error) {
-    const status = error.code === '42501' ? 403 : error.code === 'PGRST202' ? 501 : error.code === '55000' ? 409 : 500;
+    const status = error.code === '42501' ? 403 : error.code === 'PGRST202' ? 501 : error.code === '55000' || error.code === '23505' ? 409 : 500;
     return Response.json({ error: error.message, code: error.code, hint: error.hint }, { status });
   }
   return Response.json({ trip_id: data });
