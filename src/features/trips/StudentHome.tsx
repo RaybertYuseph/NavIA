@@ -14,7 +14,7 @@ import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { formatHour, timeAgo } from '@/lib/time';
 import { useLiveTrips } from './useLiveTrips';
 import { WaitAtStop } from './WaitAtStop';
-import { groupByRoute, nextDeparture, pendingDepartures, stopsForMap } from './derive';
+import { atStartStop, groupByRoute, nextDeparture, pendingDepartures, stopsForMap } from './derive';
 import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, sortedStops, type Trip } from './types';
 
 const STALE_MS = 5 * 60_000;
@@ -56,7 +56,10 @@ export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; com
                     <BigHour iso={next.scheduled_at} />
                     <p className="mt-1 font-semibold">{next.routes?.name}</p>
                     <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold backdrop-blur">
-                      <Icon name="clock" className="h-4 w-4" /> {minutesUntil(next.scheduled_at, now)}
+                      <Icon name="clock" className="h-4 w-4" />{' '}
+                      {atStartStop(next, now)
+                        ? `Saliendo pronto · en la parada de salida desde ${formatHour(next.scheduled_at)}`
+                        : minutesUntil(next.scheduled_at, now)}
                     </span>
                   </div>
                   <VehiclePhoto vehicle={next.vehicles} />

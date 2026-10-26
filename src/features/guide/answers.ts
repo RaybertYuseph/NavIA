@@ -41,7 +41,10 @@ export function whereIsBus(live: Trip[], next: Trip | null, now: number): NaviaA
 export function whenNext(next: Trip | null, now: number): NaviaAnswer {
   if (!next) return { text: 'Por hoy no quedan salidas programadas.', tab: 'horarios', actionLabel: 'Ver los horarios' };
   return {
-    text: `La próxima es a las ${formatHour(next.scheduled_at)} en la ruta ${next.routes?.name}${next.vehicles?.plate ? `, camioneta ${next.vehicles.plate}` : ''}. ${minutesUntil(next.scheduled_at, now)}.`,
+    text:
+      new Date(next.scheduled_at).getTime() <= now
+        ? `La camioneta ${next.vehicles?.plate ?? ''} de la ruta ${next.routes?.name} está en la parada de salida desde las ${formatHour(next.scheduled_at)}. Sale apenas suban todos.`
+        : `La próxima es a las ${formatHour(next.scheduled_at)} en la ruta ${next.routes?.name}${next.vehicles?.plate ? `, camioneta ${next.vehicles.plate}` : ''}. ${minutesUntil(next.scheduled_at, now)}.`,
     tab: 'horarios',
     actionLabel: 'Ver todos los horarios',
   };

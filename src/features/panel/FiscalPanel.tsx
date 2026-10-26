@@ -18,6 +18,7 @@ import { subscribeWithSession } from '@/lib/supabase/realtime';
 import { formatHour } from '@/lib/time';
 
 const CORRIDOR_KEY = 'navia:fiscal:corredor';
+const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
 
 /**
  * Vista del fiscal de la línea: unidades, mapa en vivo y salidas de hoy. Las fichas de arriba
@@ -126,7 +127,7 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         )}
       </section>
 
-      <ResetDemo onDone={refetch} />
+      {DEMO && <ResetDemo onDone={refetch} />}
       </>
       )}
 
@@ -177,7 +178,10 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                 <tbody>
                   {rt.map((t) => (
                     <tr key={t.id} className="border-t border-slate-100">
-                      <td className="py-1.5 pr-3 font-medium whitespace-nowrap">{formatHour(t.scheduled_at)}</td>
+                      <td className="py-1.5 pr-3 font-medium whitespace-nowrap">
+                        {formatHour(t.scheduled_at)}
+                        {t.started_at && <span className="block text-xs font-normal text-slate-500">Salió {formatHour(t.started_at)}</span>}
+                      </td>
                       <td className="py-1.5 pr-3 font-mono">
                         {t.vehicles?.plate ??
                           (t.status === 'scheduled' ? (
@@ -316,13 +320,13 @@ function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
     setBusy(true);
     const { data, error } = await createClient().rpc('reset_demo_today');
     setBusy(false);
-    setMessage(error ? 'No se pudo reiniciar.' : `Listo: ${data} salidas reiniciadas.`);
+    setMessage(error ? 'No se pudo reiniciar.' : `Listo: día reiniciado (${data} ${data === 1 ? 'salida borrada' : 'salidas borradas'}).`);
     await onDone();
   }
 
   return (
     <section className="flex flex-wrap items-center gap-3 rounded-3xl border border-dashed border-slate-300 p-4">
-      <p className="flex-1 text-sm text-slate-600">Demo: deja las salidas de hoy como al inicio del día para repetir el recorrido.</p>
+      <p className="flex-1 text-sm text-slate-600">Demo: borra las salidas de hoy para repetir el recorrido desde cero.</p>
       <button type="button" disabled={busy} onClick={() => setAsking(true)} className="btn-ghost px-4 py-2 text-sm disabled:opacity-50">
         {busy ? 'Reiniciando…' : 'Reiniciar demo'}
       </button>
@@ -330,7 +334,7 @@ function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
       {asking && (
         <ConfirmSheet
           title="¿Reiniciar la demo?"
-          body="Todas las salidas de hoy vuelven a «Programada» y se borran las esperas marcadas."
+          body="Se borran las salidas de hoy y las esperas marcadas. El día empieza vacío: cada salida aparece cuando un conductor se activa en la parada."
           confirmLabel="Sí, reiniciar"
           cancelLabel="Cancelar"
           onConfirm={() => void reset()}

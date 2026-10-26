@@ -44,7 +44,7 @@ export function StartQueue(props: { routes: RouteInfo[]; trips: Trip[]; vehicles
                       <span className="font-mono font-semibold">{v.plate}</span>
                       <span className="min-w-0 flex-1 truncate text-slate-600">{(v.available_driver_id && props.drivers[v.available_driver_id]) || ''}</span>
                       <span className="shrink-0 text-xs text-slate-500">
-                        {trip ? `Sale ${formatHour(trip.scheduled_at)}` : v.available_at ? `Desde ${formatHour(v.available_at)}` : ''}
+                        {v.available_at ? `Desde ${formatHour(v.available_at)}` : trip ? formatHour(trip.scheduled_at) : ''}
                       </span>
                     </li>
                   );

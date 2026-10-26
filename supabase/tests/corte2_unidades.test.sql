@@ -101,3 +101,17 @@ end $$;
 select reinstate_vehicle((select id from u));
 select pg_temp.assert((select active from vehicles where id = (select id from u)), 'el fiscal reincorpora la unidad');
 reset role;
+
+-- ───── La hora la pone el conductor al activarse (0010) ─────
+create temp table lejana (id uuid);
+with t as (insert into trips (route_id, scheduled_at)
+  values ('00000000-0000-0000-0000-000000000030', date_trunc('minute', now()) + interval '3 hours 29 seconds') returning id)
+insert into lejana select id from t;
+grant select on lejana to authenticated;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
+update u set trip = set_available_at_stop(id, '00000000-0000-0000-0000-000000000030');
+select pg_temp.assert((select scheduled_at between now() - interval '1 minute' and now() + interval '1 minute' and vehicle_id = (select id from u)
+  from trips where id = (select trip from u)), 'sin salida anunciada para la próxima media hora, sale a la hora de activación');
+reset role;
+select pg_temp.assert((select vehicle_id is null from trips where id = (select id from lejana)), 'una salida anunciada para más tarde no se toma antes de tiempo');

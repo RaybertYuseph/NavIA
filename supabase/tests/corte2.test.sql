@@ -40,21 +40,24 @@ update vehicles set photo_url = 'https://ejemplo.test/bus.jpg' where id = '00000
 select pg_temp.assert((select photo_url is not null from vehicles where id = '00000000-0000-0000-0000-000000000020'),
   'el fiscal guarda la foto de la unidad');
 
-select pg_temp.assert((select reset_demo_today() = 2), 'reiniciar la demo toca las 2 salidas de hoy');
-select pg_temp.assert((select bool_and(status = 'scheduled' and last_lat is null and started_at is null) from trips),
-  'tras reiniciar, todas las salidas quedan programadas y sin ubicación');
+-- Salidas de ayer: el reinicio no las toca.
+reset role;
+insert into trips (route_id, scheduled_at) values ('00000000-0000-0000-0000-000000000030', now() - interval '1 day');
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
+
+select pg_temp.assert((select reset_demo_today() = 2), 'reiniciar la demo borra las 2 salidas de hoy');
+select pg_temp.assert((select count(*) = 0 from trips where (scheduled_at at time zone 'America/Caracas')::date = (now() at time zone 'America/Caracas')::date),
+  'tras reiniciar, el día queda sin horarios fijos');
+select pg_temp.assert((select count(*) = 1 from trips), 'las salidas de ayer se conservan');
 select pg_temp.assert((select count(*) = 0 from stop_visits), 'tras reiniciar no quedan paradas visitadas');
 select pg_temp.assert((select not available from vehicles where id = '00000000-0000-0000-0000-000000000020'),
   'tras reiniciar la unidad deja de estar disponible');
+select pg_temp.assert((select reset_demo_today() = 0), 'reiniciar un día vacío no falla');
+reset role;
 
--- Un día sin salidas: el reinicio copia el horario del último día.
-reset role;
-update trips set scheduled_at = scheduled_at - interval '1 day';
-set role authenticated;
-select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
-create temp table ayer as select count(*) as n from trips;
-grant select on ayer to authenticated;
-select pg_temp.assert((select reset_demo_today() >= 2), 'sin salidas hoy, el reinicio las crea desde el día anterior');
-select pg_temp.assert((select count(*) from trips where (scheduled_at at time zone 'America/Caracas')::date < (now() at time zone 'America/Caracas')::date) = (select n from ayer),
-  'las salidas de ayer se conservan');
-reset role;
+-- Las pruebas siguientes parten de las 2 salidas de hoy del conductor d1, como el seed.
+insert into trips (route_id, vehicle_id, driver_id, scheduled_at)
+select '00000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-0000000000d1',
+       ((now() at time zone 'America/Caracas')::date + t) at time zone 'America/Caracas'
+from (values (time '06:00'), (time '13:00')) as s(t);

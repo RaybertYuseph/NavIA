@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupByRoute, nextDeparture, pendingDepartures, pendingStops, stopsForMap, waitingByRoute } from '@/features/trips/derive';
+import { atStartStop, groupByRoute, nextDeparture, pendingDepartures, pendingStops, stopsForMap, waitingByRoute } from '@/features/trips/derive';
 import type { Trip } from '@/features/trips/types';
 
 const stops = [1, 2, 3].map((seq) => ({ id: `s${seq}`, seq, name: `P${seq}`, lat: seq, lng: seq }));
@@ -35,6 +35,12 @@ describe('nextDeparture', () => {
     const trips = [{ ...trip('a', '07:10', 'scheduled'), vehicle_id: null }, trip('b', '07:40', 'scheduled')];
     expect(nextDeparture(trips, now)?.id).toBe('b');
     expect(pendingDepartures(trips, now).map((t) => t.id)).toEqual(['a']);
+  });
+  it('si el conductor sigue en la parada de salida, su salida sigue siendo la próxima aunque su hora pasó', () => {
+    const atStop = { ...trip('a', '06:30', 'scheduled'), vehicles: { id: 'v1', plate: 'AB123CD', capacity: 30, photo_url: null, available: true } };
+    expect(nextDeparture([atStop, trip('b', '07:40', 'scheduled')], now)?.id).toBe('a');
+    expect(atStartStop(atStop, now)).toBe(true);
+    expect(atStartStop(trip('b', '07:40', 'scheduled'), now)).toBe(false);
   });
 });
 

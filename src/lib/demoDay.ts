@@ -9,8 +9,8 @@ let readyDay: string | null = null;
 
 /**
  * Solo en modo demo: si hoy todavía no hay salidas, entra como el fiscal de la demo y llama a
- * reset_demo_today(), que copia el horario del último día con salidas. Así el conductor y el
- * estudiante tienen salidas cada mañana sin que nadie pulse "Reiniciar demo". Si hoy ya hay
+ * reset_demo_today(), que deja las unidades sin activar para empezar el día (desde 0010 las
+ * salidas no se copian: aparecen cuando un conductor se activa en la parada). Si hoy ya hay
  * salidas no toca nada, para no borrar una demo en curso. Si algo falla, la página sigue igual.
  */
 export async function ensureDemoDay() {

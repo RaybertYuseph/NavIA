@@ -17,12 +17,20 @@ export function stopsForMap(trip: Trip) {
   return stops.map((s, i) => ({ id: s.id, lat: s.lat, lng: s.lng, name: s.name, seq: i + 1, done: idx >= 0 && i <= idx }));
 }
 
-/** La próxima salida confirmada (con unidad) que no ha arrancado y cuya hora no pasó hace más de 10 minutos. */
+/**
+ * La próxima salida confirmada: la que ya tiene unidad y no ha arrancado. Si el conductor ya está
+ * en la parada de salida su hora pudo pasar, y sigue siendo la próxima hasta que arranque (0010).
+ */
 // En la demo, pasada la última salida del día se muestra la primera programada para que el tour no quede vacío.
 export function nextDeparture(trips: Trip[], now: number, demo = false) {
   const scheduled = trips.filter((t) => t.status === 'scheduled' && t.vehicle_id);
-  const upcoming = scheduled.find((t) => new Date(t.scheduled_at).getTime() > now - 10 * 60_000);
+  const upcoming = scheduled.find((t) => t.vehicles?.available || new Date(t.scheduled_at).getTime() > now - 10 * 60_000);
   return upcoming ?? (demo ? scheduled[0] : undefined) ?? null;
+}
+
+/** Si la salida confirmada ya está en la parada de salida (su hora llegó y no ha arrancado). */
+export function atStartStop(trip: Trip, now: number) {
+  return trip.status === 'scheduled' && !!trip.vehicle_id && new Date(trip.scheduled_at).getTime() <= now + 60_000;
 }
 
 /** Salidas que el fiscal programó y todavía esperan unidad (las de las próximas horas). */
