@@ -7,7 +7,7 @@ export type MapBus = { id: string; lat: number; lng: number; label: string; stal
 export type MapStop = { id: string; lat: number; lng: number; name: string; seq?: number; done?: boolean };
 
 /**
- * Mapa con el estilo de NavIA, sin API key: teselas claras de CARTO (datos de OpenStreetMap) con
+ * Mapa con el estilo de NavIA, sin API key: teselas claras de Esri (con OpenStreetMap de respaldo) con
  * un tinte de la marca, la ruta como línea continua, paradas numeradas y cada unidad como una
  * pastilla con su placa y la gota. Leaflet se carga solo en el navegador y solo en las pantallas
  * que muestran mapa, para no pesar en la primera carga.
@@ -25,11 +25,22 @@ export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBu
       map.current = L.map(el.current, { zoomControl: false, attributionControl: true }).setView([10.47, -66.65], 11);
       L.control.zoom({ position: 'bottomright', zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar' }).addTo(map.current);
       map.current.attributionControl.setPrefix(false);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
-      }).addTo(map.current);
+      // CARTO pasó a pedir API key ("API key required" en las teselas). Esri Light Gray no la pide;
+      // si sus teselas fallan varias veces, se cambia a las de OpenStreetMap.
+      const esri = (name: string) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${name}/MapServer/tile/{z}/{y}/{x}`;
+      const base = L.tileLayer(esri('World_Light_Gray_Base'), { maxNativeZoom: 16, maxZoom: 19, attribution: 'Teselas © Esri · datos © OpenStreetMap y otros' });
+      const labels = L.tileLayer(esri('World_Light_Gray_Reference'), { maxNativeZoom: 16, maxZoom: 19 });
+      let failures = 0;
+      base.on('tileerror', () => {
+        if (++failures !== 4 || !map.current) return;
+        map.current.removeLayer(base).removeLayer(labels);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map.current);
+      });
+      base.addTo(map.current);
+      labels.addTo(map.current);
       layer.current = L.layerGroup().addTo(map.current);
       draw(L);
     });
