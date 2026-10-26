@@ -48,3 +48,12 @@ select '00000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-00000000
        '00000000-0000-0000-0000-0000000000d1',
        ((now() at time zone 'America/Caracas')::date + t) at time zone 'America/Caracas'
 from (values (time '06:00'), (time '13:00')) as s(t);
+
+-- Ruta "Próximamente" (sin salidas) para probar el filtro del fiscal y la asignación de unidades.
+update routes set corridor = 'Chacaíto' where id = '00000000-0000-0000-0000-000000000030';
+insert into routes (id, operator_id, university_id, name, direction, fare_usd, corridor, coming_soon) values
+  ('00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000001',
+   'California → USM', 'ida', 1.00, 'California', true);
+insert into stops (route_id, seq, name, lat, lng) values
+  ('00000000-0000-0000-0000-000000000041', 1, 'California Norte', 10.4880, -66.8160),
+  ('00000000-0000-0000-0000-000000000041', 2, 'USM La Florencia', 10.4691, -66.7797);

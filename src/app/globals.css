@@ -177,3 +177,75 @@ body {
   .tour-pop, .sheet-up, .typing-dot,
   .gota-bob, .gota-shadow, .gota-walk, .gota-hand, .gota-point, .gota-blink, .agent-pulse { animation: none; }
 }
+
+/* ───── Mapa con el estilo de NavIA (Leaflet) ───── */
+.navia-map .leaflet-tile-pane { filter: saturate(0.75) hue-rotate(-8deg) brightness(1.03); }
+.navia-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgb(14 165 233 / 0.10), rgb(99 102 241 / 0.06) 60%, transparent);
+}
+.navia-map.leaflet-container .leaflet-control-zoom.leaflet-bar {
+  border: none;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgb(11 27 58 / 0.15);
+}
+.navia-map .leaflet-control-zoom a {
+  width: 2.25rem;
+  height: 2.25rem;
+  line-height: 2.25rem;
+  color: #0b1b3a;
+  font-weight: 700;
+  border-bottom-color: rgb(226 232 240);
+}
+.navia-map .leaflet-control-attribution {
+  border-radius: 0.6rem 0 0 0;
+  background: rgb(255 255 255 / 0.8);
+  font-size: 10px;
+}
+.navia-stop {
+  display: flex;
+  height: 26px;
+  width: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid #0ea5e9;
+  color: #0369a1;
+  font: 800 11px/1 var(--font-jakarta), system-ui, sans-serif;
+  box-shadow: 0 2px 6px rgb(11 27 58 / 0.25);
+}
+.navia-stop.is-done { background: #10b981; border-color: #fff; color: #fff; }
+.navia-tip { border-radius: 0.75rem; font: 600 12px var(--font-jakarta), system-ui, sans-serif; }
+.navia-bus {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  color: #fff;
+  font: 700 12px/1 var(--font-jakarta), system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgb(14 116 233 / 0.4);
+}
+.navia-bus::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom: 0;
+  border-top-color: #4f7cf0;
+}
+.navia-bus img { height: 22px; width: 22px; border-radius: 9999px; background: #fff; object-fit: contain; }
+.navia-bus.is-stale { background: #94a3b8; box-shadow: 0 4px 10px rgb(11 27 58 / 0.2); }
+.navia-bus.is-stale::after { border-top-color: #94a3b8; }

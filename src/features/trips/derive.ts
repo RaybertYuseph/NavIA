@@ -14,7 +14,7 @@ export function groupByRoute(trips: Trip[]) {
 export function stopsForMap(trip: Trip) {
   const stops = sortedStops(trip);
   const idx = stops.findIndex((s) => s.id === trip.current_stop_id);
-  return stops.map((s, i) => ({ id: s.id, lat: s.lat, lng: s.lng, name: s.name, done: idx >= 0 && i <= idx }));
+  return stops.map((s, i) => ({ id: s.id, lat: s.lat, lng: s.lng, name: s.name, seq: i + 1, done: idx >= 0 && i <= idx }));
 }
 
 /** La próxima salida que no ha arrancado y cuya hora no pasó hace más de 10 minutos. */

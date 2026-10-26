@@ -20,7 +20,7 @@ import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, sortedStops, type Trip
 const STALE_MS = 5 * 60_000;
 
 /** Vista del estudiante en tres pestañas: Inicio (próxima salida y parada), En vivo y Horarios. */
-export function StudentHome({ initial }: { initial: Trip[] }) {
+export function StudentHome({ initial, comingSoon = [] }: { initial: Trip[]; comingSoon?: string[] }) {
   const { trips, now, online } = useLiveTrips(initial);
   const { tab, setTab } = useGuide();
   const live = trips.filter(isLive);
@@ -116,6 +116,19 @@ export function StudentHome({ initial }: { initial: Trip[] }) {
         <section aria-labelledby="rutas">
           <h2 id="rutas" className="section-title">Rutas y horarios de hoy</h2>
           <RoutesSchedule trips={trips} />
+          {comingSoon.length > 0 && (
+            <div className="card mt-3 rounded-3xl p-4">
+              <h3 className="font-bold">Próximamente</h3>
+              <p className="text-sm text-slate-500">Rutas que NavIA va a cubrir pronto.</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {comingSoon.map((name) => (
+                  <li key={name} className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-800 ring-1 ring-amber-100">
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 

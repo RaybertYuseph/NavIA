@@ -4,11 +4,13 @@ import type { Map as LeafletMap, LayerGroup } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 export type MapBus = { id: string; lat: number; lng: number; label: string; stale?: boolean };
-export type MapStop = { id: string; lat: number; lng: number; name: string; done?: boolean };
+export type MapStop = { id: string; lat: number; lng: number; name: string; seq?: number; done?: boolean };
 
 /**
- * Mapa con OpenStreetMap (sin API key). Leaflet se carga solo en el navegador y solo en las
- * pantallas que muestran mapa, para no pesar en la primera carga.
+ * Mapa con el estilo de NavIA, sin API key: teselas claras de CARTO (datos de OpenStreetMap) con
+ * un tinte de la marca, la ruta como línea continua, paradas numeradas y cada unidad como una
+ * pastilla con su placa y la gota. Leaflet se carga solo en el navegador y solo en las pantallas
+ * que muestran mapa, para no pesar en la primera carga.
  */
 export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBus[]; stops?: MapStop[]; className?: string }) {
   const el = useRef<HTMLDivElement>(null);
@@ -20,10 +22,13 @@ export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBu
     let cancelled = false;
     void import('leaflet').then((L) => {
       if (cancelled || !el.current || map.current) return;
-      map.current = L.map(el.current, { zoomControl: true, attributionControl: true }).setView([10.47, -66.65], 11);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '© OpenStreetMap',
+      map.current = L.map(el.current, { zoomControl: false, attributionControl: true }).setView([10.47, -66.65], 11);
+      L.control.zoom({ position: 'bottomright', zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar' }).addTo(map.current);
+      map.current.attributionControl.setPrefix(false);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd',
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
       }).addTo(map.current);
       layer.current = L.layerGroup().addTo(map.current);
       draw(L);
@@ -44,31 +49,31 @@ export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBu
   function draw(L: typeof import('leaflet')) {
     if (!map.current || !layer.current) return;
     layer.current.clearLayers();
-    for (const s of stops) {
-      L.circleMarker([s.lat, s.lng], {
-        radius: 5,
-        color: s.done ? '#059669' : '#64748b',
-        fillColor: s.done ? '#059669' : '#ffffff',
-        fillOpacity: 1,
-        weight: 2,
-      })
-        .bindTooltip(s.name)
-        .addTo(layer.current);
-    }
     if (stops.length > 1) {
-      L.polyline(
-        stops.map((s) => [s.lat, s.lng] as [number, number]),
-        { color: '#0284c7', weight: 3, opacity: 0.5, dashArray: '6 6' },
-      ).addTo(layer.current);
+      const line = stops.map((s) => [s.lat, s.lng] as [number, number]);
+      L.polyline(line, { color: '#ffffff', weight: 9, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }).addTo(layer.current);
+      L.polyline(line, { color: '#0ea5e9', weight: 5, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }).addTo(layer.current);
     }
-    for (const b of buses) {
-      L.marker([b.lat, b.lng], {
+    stops.forEach((s, i) => {
+      L.marker([s.lat, s.lng], {
         icon: L.divIcon({
           className: '',
-          html: `<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center">
-            <div style="background:${b.stale ? '#94a3b8' : '#0ea5e9'};color:#fff;border-radius:9999px;padding:2px 8px;font:600 12px system-ui;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)">🚌 ${escapeHtml(b.label)}</div>
-            <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${b.stale ? '#94a3b8' : '#0ea5e9'}"></div>
-          </div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+          html: `<div class="navia-stop${s.done ? ' is-done' : ''}">${s.done ? '✓' : (s.seq ?? i + 1)}</div>`,
+        }),
+        keyboard: false,
+      })
+        .bindTooltip(escapeHtml(s.name), { direction: 'top', offset: [0, -12], className: 'navia-tip' })
+        .addTo(layer.current!);
+    });
+    for (const b of buses) {
+      L.marker([b.lat, b.lng], {
+        zIndexOffset: 1000,
+        icon: L.divIcon({
+          className: '',
+          iconSize: [0, 0],
+          html: `<div class="navia-bus${b.stale ? ' is-stale' : ''}"><img src="/brand/gota/navia.webp" alt="" /><span>${escapeHtml(b.label)}</span></div>`,
         }),
       }).addTo(layer.current);
     }
@@ -79,7 +84,7 @@ export function BusMap({ buses, stops = [], className = 'h-64' }: { buses: MapBu
     }
   }
 
-  return <div ref={el} className={`${className} z-0 w-full overflow-hidden rounded-3xl bg-slate-200`} />;
+  return <div ref={el} className={`navia-map ${className} z-0 w-full overflow-hidden rounded-3xl bg-sky-50 ring-1 ring-slate-200/70`} />;
 }
 
 function escapeHtml(s: string) {

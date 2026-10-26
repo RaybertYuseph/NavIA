@@ -10,7 +10,7 @@ import { NaviaFab } from '@/features/guide/NaviaFab';
 import { BusMap } from '@/features/map/BusMap';
 import { groupByRoute, waitingByRoute } from '@/features/trips/derive';
 import { useLiveTrips } from '@/features/trips/useLiveTrips';
-import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, totalWaiting, type Trip, type Vehicle } from '@/features/trips/types';
+import { STATUS_LABEL, STATUS_STYLE, currentStop, isLive, routeKey, totalWaiting, type RouteInfo, type Trip, type Vehicle } from '@/features/trips/types';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
 import { uploadVehiclePhoto } from '@/features/vehicles/uploadPhoto';
 import { createClient } from '@/lib/supabase/client';
@@ -26,17 +26,32 @@ const UNIT_STYLE: Record<UnitState, string> = {
   fuera: 'bg-slate-200 text-slate-600',
 };
 
-/** Vista del fiscal de la línea: unidades, mapa en vivo y salidas de hoy por ruta. */
-export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehicle[]; drivers: Record<string, string> }) {
-  const { trips, now, online, refetch } = useLiveTrips(props.initialTrips);
-  const vehicles = useLiveVehicles(props.initialVehicles);
-  const { tab } = useGuide();
+const CORRIDOR_KEY = 'navia:fiscal:corredor';
 
-  const units = vehicles.map((v) => {
-    const trip = trips.find((t) => t.vehicle_id === v.id && isLive(t)) ?? null;
-    const state: UnitState = trip ? 'en_ruta' : v.available ? 'disponible' : 'fuera';
-    return { vehicle: v, trip, state };
-  });
+/**
+ * Vista del fiscal de la línea: unidades, mapa en vivo y salidas de hoy. Las fichas de arriba
+ * filtran todo por corredor (ida y regreso de una misma ruta) y se recuerdan en este teléfono.
+ */
+export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehicle[]; routes: RouteInfo[]; drivers: Record<string, string> }) {
+  const { trips: allTrips, now, online, refetch } = useLiveTrips(props.initialTrips);
+  const [vehicles, setVehicles] = useLiveVehicles(props.initialVehicles);
+  const { tab } = useGuide();
+  const corridors = useMemo(() => corridorsOf(props.routes), [props.routes]);
+  const [corridor, setCorridor] = useCorridor(corridors.map((c) => c.key));
+  const routeIds = corridor ? new Set(props.routes.filter((r) => routeKey(r) === corridor).map((r) => r.id)) : null;
+  const trips = routeIds ? allTrips.filter((t) => routeIds.has(t.route_id)) : allTrips;
+  const routeName = (id: string | null | undefined) => props.routes.find((r) => r.id === id)?.name ?? null;
+  const [assigning, setAssigning] = useState<Vehicle | null>(null);
+
+  const units = vehicles
+    .map((v) => {
+      const trip = allTrips.find((t) => t.vehicle_id === v.id && isLive(t)) ?? null;
+      const state: UnitState = trip ? 'en_ruta' : v.available ? 'disponible' : 'fuera';
+      return { vehicle: v, trip, state };
+    })
+    .filter((u) => !routeIds || (u.vehicle.route_id && routeIds.has(u.vehicle.route_id)) || (u.trip && routeIds.has(u.trip.route_id)));
+  const mapRoute = corridor ? (props.routes.find((r) => routeKey(r) === corridor && !r.coming_soon) ?? props.routes.find((r) => routeKey(r) === corridor)) : null;
+  const comingSoon = !!corridor && props.routes.filter((r) => routeKey(r) === corridor).every((r) => r.coming_soon);
   const counts = {
     en_ruta: units.filter((u) => u.state === 'en_ruta').length,
     disponible: units.filter((u) => u.state === 'disponible').length,
@@ -58,6 +73,33 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
         ]}
       />
 
+      {corridors.length > 1 && (
+        <nav aria-label="Filtrar por ruta" data-tour="rutas" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {[{ key: null, soon: false }, ...corridors].map((c) => {
+            const active = c.key === corridor;
+            return (
+              <button
+                key={c.key ?? 'todas'}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setCorridor(c.key)}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap transition active:scale-95 ${
+                  active ? 'bg-ink text-white shadow-lg shadow-ink/20' : 'bg-white text-slate-700 shadow-sm ring-1 ring-slate-200'
+                }`}
+              >
+                {c.key ?? 'Todas las rutas'}
+                {c.soon && <span className={`ml-1.5 text-xs font-medium ${active ? 'text-white/70' : 'text-amber-600'}`}>Próximamente</span>}
+              </button>
+            );
+          })}
+        </nav>
+      )}
+      {comingSoon && (
+        <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 ring-1 ring-amber-100">
+          Esta ruta está por abrir: todavía no tiene salidas. Ya puedes asignarle unidades en la pestaña Unidades.
+        </p>
+      )}
+
       {tab === 'resumen' && (
       <>
       <section data-tour="kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -72,11 +114,13 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
 
       <section aria-labelledby="mapa" data-tour="mapa">
         <h2 id="mapa" className="section-title">Mapa en vivo</h2>
-        {live.length === 0 ? (
+        {live.length === 0 && !mapRoute ? (
           <p className="card rounded-3xl p-4 text-slate-600">Ninguna unidad está enviando ubicación ahora.</p>
         ) : (
           <BusMap
+            key={corridor ?? 'todas'}
             className="h-80"
+            stops={mapRoute ? [...mapRoute.stops].sort((a, b) => a.seq - b.seq).map((s, i) => ({ ...s, seq: i + 1 })) : []}
             buses={live.map((t) => ({
               id: t.id,
               lat: t.last_lat!,
@@ -105,6 +149,16 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${UNIT_STYLE[state]}`}>{UNIT_LABEL[state]}</span>
                 </div>
                 <p className="text-sm text-slate-500">{vehicle.capacity} puestos</p>
+                {'route_id' in vehicle && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className={`truncate text-sm font-medium ${vehicle.route_id ? 'text-brand-700' : 'text-slate-400'}`}>
+                      {routeName(vehicle.route_id) ?? 'Sin ruta asignada'}
+                    </span>
+                    <button type="button" onClick={() => setAssigning(vehicle)} className="chip py-1 text-xs">
+                      {vehicle.route_id ? 'Cambiar ruta' : 'Asignar ruta'}
+                    </button>
+                  </div>
+                )}
                 {trip ? (
                   <>
                     <p className="mt-1 text-sm">
@@ -120,12 +174,21 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
                     </p>
                   </>
                 ) : (
-                  <p className="mt-1 text-sm text-slate-600">{nextFor(trips, vehicle.id, now)}</p>
+                  <p className="mt-1 text-sm text-slate-600">{nextFor(allTrips, vehicle.id, now)}</p>
                 )}
               </div>
             </article>
           ))}
+          {units.length === 0 && <p className="card rounded-3xl p-4 text-slate-600">Ninguna unidad asignada a esta ruta todavía.</p>}
         </div>
+        {assigning && (
+          <AssignRouteSheet
+            vehicle={assigning}
+            routes={props.routes}
+            onClose={() => setAssigning(null)}
+            onAssigned={(routeId) => setVehicles((prev) => prev.map((v) => (v.id === assigning.id ? { ...v, route_id: routeId } : v)))}
+          />
+        )}
       </section>
       )}
 
@@ -133,6 +196,7 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
       <section aria-labelledby="salidas">
         <h2 id="salidas" className="section-title">Salidas de hoy por ruta</h2>
         <div className="flex flex-col gap-3">
+          {trips.length === 0 && <p className="card rounded-3xl p-4 text-slate-600">Esta ruta no tiene salidas hoy.</p>}
           {groupByRoute(trips).map(({ route, trips: rt }) => (
             <article key={rt[0].route_id} className="card overflow-x-auto rounded-3xl p-4">
               <div className="flex items-start justify-between gap-2">
@@ -248,7 +312,114 @@ function useLiveVehicles(initial: Vehicle[]) {
         }),
     );
   }, []);
-  return vehicles;
+  return [vehicles, setVehicles] as const;
+}
+
+/** Corredores para las fichas: primero los que tienen salidas, luego los "Próximamente". */
+function corridorsOf(routes: RouteInfo[]) {
+  const byKey = new Map<string, boolean>();
+  for (const r of routes) byKey.set(routeKey(r), (byKey.get(routeKey(r)) ?? true) && r.coming_soon);
+  return [...byKey].map(([key, soon]) => ({ key, soon })).sort((a, b) => Number(a.soon) - Number(b.soon));
+}
+
+/** Corredor elegido, recordado en este teléfono (si ya no existe, vuelve a "Todas"). */
+function useCorridor(keys: string[]) {
+  const [corridor, setCorridor] = useState<string | null>(null);
+  const known = keys.join('|');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CORRIDOR_KEY);
+      if (saved && known.split('|').includes(saved)) setCorridor(saved);
+    } catch {
+      /* sin almacenamiento: queda en "Todas" */
+    }
+  }, [known]);
+  const choose = (key: string | null) => {
+    setCorridor(key);
+    try {
+      if (key) localStorage.setItem(CORRIDOR_KEY, key);
+      else localStorage.removeItem(CORRIDOR_KEY);
+    } catch {
+      /* sin almacenamiento: el filtro dura mientras la página esté abierta */
+    }
+  };
+  return [corridor, choose] as const;
+}
+
+/** Hoja para elegir la ruta que cubre una unidad. */
+function AssignRouteSheet(props: { vehicle: Vehicle; routes: RouteInfo[]; onClose: () => void; onAssigned: (routeId: string | null) => void }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { onClose } = props;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  async function assign(routeId: string | null) {
+    setBusy(routeId ?? 'none');
+    setError(null);
+    const { error: e } = await createClient().rpc('assign_vehicle_route', { p_vehicle_id: props.vehicle.id, p_route_id: routeId });
+    setBusy(null);
+    if (e) return setError(e.code === 'PGRST202' ? 'Falta aplicar la migración 0007 en Supabase.' : 'No se pudo asignar. Prueba otra vez.');
+    props.onAssigned(routeId);
+    onClose();
+  }
+
+  const options: { id: string | null; name: string; detail: string }[] = [
+    ...props.routes.map((r) => ({ id: r.id, name: r.name, detail: r.coming_soon ? 'Próximamente' : (r.corridor ?? '') })),
+    { id: null, name: 'Sin ruta', detail: 'La unidad queda libre' },
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="assign-title">
+      <button type="button" aria-label="Cerrar" tabIndex={-1} className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" onClick={onClose} />
+      <section className="sheet-up relative flex max-h-[85dvh] w-full flex-col rounded-t-[2rem] bg-white shadow-2xl sm:max-w-md sm:rounded-[2rem]">
+        <header className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+          <div className="flex-1">
+            <h2 id="assign-title" className="text-lg font-extrabold">
+              ¿Qué ruta cubre {props.vehicle.plate}?
+            </h2>
+            <p className="text-sm text-slate-500">Las salidas nuevas de esa ruta toman esta unidad.</p>
+          </div>
+        </header>
+        <ul className="flex-1 space-y-1.5 overflow-y-auto px-4 py-3">
+          {options.map((o) => {
+            const active = o.id === (props.vehicle.route_id ?? null);
+            return (
+              <li key={o.id ?? 'none'}>
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  disabled={busy !== null}
+                  onClick={() => void assign(o.id)}
+                  className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition active:scale-[0.99] disabled:opacity-60 ${
+                    active ? 'bg-brand-50 ring-2 ring-brand-400' : 'bg-slate-50 ring-1 ring-slate-200'
+                  }`}
+                >
+                  <span className="flex-1">
+                    <span className={`block ${active ? 'font-bold text-ink' : 'font-medium text-slate-700'}`}>{o.name}</span>
+                    {o.detail && <span className={`text-xs ${o.detail === 'Próximamente' ? 'text-amber-600' : 'text-slate-500'}`}>{o.detail}</span>}
+                  </span>
+                  {busy === (o.id ?? 'none') ? <span className="text-xs text-slate-500">Guardando…</span> : active && <span className="text-brand-600">✓</span>}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <footer className="border-t border-slate-100 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {error && (
+            <p role="alert" className="mb-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+              {error}
+            </p>
+          )}
+          <button type="button" onClick={onClose} className="btn-ghost w-full">
+            Cancelar
+          </button>
+        </footer>
+      </section>
+    </div>
+  );
 }
 
 function PhotoUploader({ vehicle }: { vehicle: Vehicle }) {

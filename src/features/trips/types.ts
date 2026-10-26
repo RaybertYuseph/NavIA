@@ -8,7 +8,24 @@ export type Vehicle = {
   capacity: number;
   photo_url: string | null;
   available: boolean;
+  /** Ruta que cubre la unidad (0007); solo la trae la consulta del fiscal. */
+  route_id?: string | null;
 };
+
+/** Ruta de la línea, con su corredor (ida y regreso juntos) y si está por abrir. */
+export type RouteInfo = {
+  id: string;
+  name: string;
+  direction: 'ida' | 'regreso';
+  corridor: string | null;
+  coming_soon: boolean;
+  stops: Stop[];
+};
+
+/** Clave del filtro del fiscal: el corredor si lo tiene, si no el nombre de la ruta. */
+export function routeKey(r: Pick<RouteInfo, 'corridor' | 'name'>) {
+  return r.corridor ?? r.name;
+}
 
 export type Trip = {
   id: string;

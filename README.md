@@ -76,7 +76,9 @@ supabase/
   migrations/0004_tres_vistas.sql   foto y disponibilidad de unidades, reinicio de la demo
   migrations/0005_espera_en_parada.sql  "Estoy en la parada" y conteo por parada
   migrations/0006_espera_con_gps.sql    "Estoy aquí" solo a 50 m o menos de la parada
+  migrations/0007_rutas_y_unidades.sql  corredores, rutas "Próximamente" y unidad asignada a cada ruta
   demo.sql                     cuentas, unidades y salidas de la demo
+  rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
   templates/codigo.html        correo con el código de entrada
   datos_piloto.sql             ruta, paradas y salidas de hoy para el proyecto en la nube
   seed.sql                     USM, 1 operador, 1 ruta con 5 paradas, 2 salidas hoy
