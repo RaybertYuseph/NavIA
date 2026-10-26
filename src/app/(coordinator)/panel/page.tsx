@@ -6,8 +6,8 @@ import { ensureDemoDay } from '@/lib/demoDay';
 import { requireRole } from '@/lib/profile';
 
 export default async function FiscalPage() {
-  const { supabase, profile } = await requireRole(['coordinator', 'admin']);
-  await ensureDemoDay();
+  // La preparación del día de demo corre a la par de la sesión: no depende de ella.
+  const [{ supabase, profile }] = await Promise.all([requireRole(['coordinator', 'admin']), ensureDemoDay()]);
   const [trips, vehicles, drivers] = await Promise.all([
     fetchTodayTrips(supabase),
     supabase.from('vehicles').select('id, plate, capacity, photo_url, available').eq('active', true).order('plate'),

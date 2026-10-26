@@ -115,9 +115,9 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
           type="button"
           disabled={busy}
           onClick={() => void save(null)}
-          className="mt-3 text-sm font-semibold text-slate-500 disabled:opacity-50"
+          className="btn-ghost mt-3 w-full disabled:opacity-50"
         >
-          Ya no espero
+          {busy ? 'Quitando…' : 'Ya no espero aquí'}
         </button>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
       </Card>

@@ -1,12 +1,19 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { NaviaLogo } from '@/features/brand/NaviaAgent';
+import { useLeave } from '@/features/auth/useLeave';
 import { useGuide } from '@/features/guide/GuideProvider';
 import { Icon } from './icons';
 
-/** Barra superior fija: logo, rol y un menú con el tour y la salida. */
+const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
+
+/**
+ * Barra superior fija: logo, rol y un menú con el tour y la salida. En la demo, además, un
+ * botón visible "Inicio demo" para volver a elegir rol sin abrir el menú.
+ */
 export function TopBar({ name, role, wide }: { name: string; role: string; wide: boolean }) {
   const { startTour } = useGuide();
+  const { leaving, leave } = useLeave(DEMO ? 'local' : 'global');
   const [open, setOpen] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
   const initials = name
@@ -26,8 +33,19 @@ export function TopBar({ name, role, wide }: { name: string; role: string; wide:
     <header className="glass sticky top-0 z-20 border-b border-white/60 pt-[env(safe-area-inset-top)]">
       <div className={`mx-auto flex items-center gap-3 px-4 py-2.5 ${wide ? 'max-w-5xl' : 'max-w-md'}`}>
         <NaviaLogo size={34} />
-        <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 ring-1 ring-brand-100">{role}</span>
-        <div ref={menu} className="relative ml-auto">
+        <span className={`${DEMO ? 'hidden sm:inline' : ''} rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 ring-1 ring-brand-100`}>{role}</span>
+        {DEMO && (
+          <button
+            type="button"
+            onClick={() => void leave()}
+            disabled={leaving}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold text-brand-700 shadow-sm ring-1 ring-brand-200 transition active:scale-95 disabled:opacity-60"
+          >
+            <Icon name="home" className="h-4 w-4" />
+            {leaving ? 'Saliendo…' : 'Inicio demo'}
+          </button>
+        )}
+        <div ref={menu} className={`relative ${DEMO ? '' : 'ml-auto'}`}>
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
@@ -55,11 +73,15 @@ export function TopBar({ name, role, wide }: { name: string; role: string; wide:
               >
                 <Icon name="sparkle" className="h-5 w-5 text-brand-500" /> Ver el recorrido de NavIA
               </button>
-              <form action="/auth/salir" method="post">
-                <button role="menuitem" className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50">
-                  <Icon name="logout" className="h-5 w-5 text-slate-400" /> Salir
-                </button>
-              </form>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={leaving}
+                onClick={() => void leave()}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              >
+                <Icon name="logout" className="h-5 w-5 text-slate-400" /> {leaving ? 'Saliendo…' : DEMO ? 'Salir de la demo' : 'Salir'}
+              </button>
             </div>
           )}
         </div>

@@ -22,7 +22,10 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims verifica el token en el servidor (con llaves asimétricas, sin ir a Supabase) y lo
+  // renueva si venció; requireRole lo vuelve a verificar con el perfil.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims.sub ?? null;
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 

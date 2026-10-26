@@ -13,13 +13,14 @@ export const HOME_BY_ROLE: Record<Role, string> = {
 /** Perfil de quien está conectado; si su rol no puede ver esta zona, lo lleva a la suya. */
 export async function requireRole(allowed: Role[]) {
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims.sub;
+  if (!userId) redirect('/login');
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, role, full_name, status')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
   if (!profile) redirect('/login');
 
