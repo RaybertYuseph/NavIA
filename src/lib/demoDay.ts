@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { caracasDayRange } from '@/lib/time';
 
 const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
@@ -14,31 +14,44 @@ let readyDay: string | null = null;
  * salidas no toca nada, para no borrar una demo en curso. Si algo falla, la página sigue igual.
  */
 export async function ensureDemoDay() {
-  const password = (process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? '').trim();
-  if (!DEMO || !password) return;
   const { from, to } = caracasDayRange();
   if (readyDay === from) return;
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
-    const { error: authError } = await supabase.auth.signInWithPassword({ email: DEMO_FISCAL, password });
-    if (authError) throw authError;
-    const { count, error: countError } = await supabase
+    await withDemoFiscal(async (supabase) => {
+      const { count, error: countError } = await supabase
       .from('trips')
       .select('id', { count: 'exact', head: true })
       .gte('scheduled_at', from)
       .lt('scheduled_at', to);
-    if (countError) throw countError;
-    if (!count) {
-      const { error: resetError } = await supabase.rpc('reset_demo_today');
-      if (resetError) throw resetError;
-    }
-    await supabase.auth.signOut({ scope: 'local' });
+      if (countError) throw countError;
+      if (!count) {
+        const { error: resetError } = await supabase.rpc('reset_demo_today');
+        if (resetError) throw resetError;
+      }
+    });
     readyDay = from;
   } catch (e) {
     console.error('No se pudo preparar el día de la demo', e);
+  }
+}
+
+/**
+ * Solo en modo demo: corre `fn` con una sesión del fiscal de la demo (para lo que solo el fiscal
+ * puede hacer, como reiniciar o simular el día). Fuera de la demo no hace nada y devuelve null.
+ */
+export async function withDemoFiscal<T>(fn: (supabase: SupabaseClient) => Promise<T>): Promise<T | null> {
+  const password = (process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? '').trim();
+  if (!DEMO || !password) return null;
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  const { error: authError } = await supabase.auth.signInWithPassword({ email: DEMO_FISCAL, password });
+  if (authError) throw authError;
+  try {
+    return await fn(supabase);
+  } finally {
+    await supabase.auth.signOut({ scope: 'local' });
   }
 }

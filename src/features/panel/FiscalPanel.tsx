@@ -1,4 +1,5 @@
 'use client';
+import { startDemoSimulation } from '@/features/guide/demoSim';
 import { useEffect, useMemo, useState } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { OfflineBanner } from '@/components/OfflineBanner';
@@ -325,11 +326,30 @@ function ResetDemo({ onDone }: { onDone: () => Promise<void> }) {
     await onDone();
   }
 
+  async function simulate() {
+    setBusy(true);
+    const created = await startDemoSimulation();
+    setBusy(false);
+    setMessage(
+      created === null
+        ? 'No se pudo simular.'
+        : created === 0
+          ? 'Ya hay una simulación hoy. Reinicia la demo para empezar otra.'
+          : `Listo: ${created} ${created === 1 ? 'salida de ejemplo' : 'salidas de ejemplo'}. Se mueven solas por la ruta.`,
+    );
+    await onDone();
+  }
+
   return (
     <section className="flex flex-wrap items-center gap-3 rounded-3xl border border-dashed border-slate-300 p-4">
-      <p className="flex-1 text-sm text-slate-600">Demo: borra las salidas de hoy para repetir el recorrido desde cero.</p>
+      <p className="flex-1 text-sm text-slate-600">
+        Demo: simula salidas (una en camino, otra cargando y la del conductor) o borra las de hoy para empezar de cero.
+      </p>
+      <button type="button" disabled={busy} onClick={() => void simulate()} className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
+        Simular salidas
+      </button>
       <button type="button" disabled={busy} onClick={() => setAsking(true)} className="btn-ghost px-4 py-2 text-sm disabled:opacity-50">
-        {busy ? 'Reiniciando…' : 'Reiniciar demo'}
+        {busy ? 'Un momento…' : 'Reiniciar demo'}
       </button>
       {message && <p className="w-full text-sm font-medium text-slate-700">{message}</p>}
       {asking && (

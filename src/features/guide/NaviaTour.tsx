@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
+import { startDemoSimulation } from './demoSim';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
 import { useTypewriter } from './useTypewriter';
 
@@ -36,7 +38,8 @@ function findTarget(name: string) {
   return [...document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`)].find((el) => el.getClientRects().length > 0) ?? null;
 }
 
-type Phase = 'ask' | number | null;
+/** 'prep': en la demo, NavIA prepara salidas de ejemplo antes de empezar el recorrido. */
+type Phase = 'ask' | 'prep' | number | null;
 type Box = { top: number; left: number; width: number; height: number };
 type Spot = { x: number; y: number; card: React.CSSProperties };
 
@@ -89,7 +92,8 @@ export function NaviaTour(props: {
   // Solo los pasos cuyo elemento está en pantalla (o aparece al abrir su pestaña): sin salida a su
   // cargo el conductor no tiene botón de acción ni paradas que mostrar.
   const [steps, setSteps] = useState(() => TOURS[view]);
-  const [phase, setPhaseRaw] = useState<Phase>(manual ? (manual.ask ? 'ask' : 0) : null);
+  const [phase, setPhaseRaw] = useState<Phase>(manual ? (manual.ask ? 'ask' : DEMO ? 'prep' : 0) : null);
+  const router = useRouter();
   const setPhase = useCallback(
     (p: Phase) => {
       if (p === 0) setSteps(TOURS[view].filter((s) => !s.target || s.tab || findTarget(s.target)));
@@ -113,6 +117,22 @@ export function NaviaTour(props: {
     const t = setTimeout(() => setPhaseRaw('ask'), 700);
     return () => clearTimeout(t);
   }, [manual, userId]);
+
+  // En la demo el día puede estar vacío: antes del recorrido se simulan salidas (una en camino,
+  // otra cargando y la del conductor) para que cada paso muestre algo real.
+  useEffect(() => {
+    if (phase !== 'prep') return;
+    let alive = true;
+    void (async () => {
+      const created = await startDemoSimulation();
+      if (created) router.refresh();
+      await new Promise((r) => setTimeout(r, created ? 1800 : 300));
+      if (alive) setPhase(0);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [phase, router, setPhase]);
 
   const step = typeof phase === 'number' ? steps[phase] : null;
 
@@ -184,7 +204,8 @@ export function NaviaTour(props: {
   }, [phase, finish]);
 
   if (phase === null) return null;
-  if (phase === 'ask') return <AskCard firstName={firstName} onYes={() => setPhase(0)} onNo={finish} />;
+  if (phase === 'ask') return <AskCard firstName={firstName} onYes={() => setPhase(DEMO ? 'prep' : 0)} onNo={finish} />;
+  if (phase === 'prep') return <PrepCard />;
 
   const i = phase;
   const isLast = i === steps.length - 1;
@@ -223,6 +244,18 @@ export function NaviaTour(props: {
           onDone={() => setSpoken(i)}
         />
       )}
+    </div>
+  );
+}
+
+function PrepCard() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="NavIA prepara la demo">
+      <div className="tour-pop w-full max-w-sm rounded-[2rem] bg-white p-6 text-center shadow-2xl">
+        <NaviaAgent size={120} animated walking className="mx-auto -mt-16" />
+        <p className="mt-2 text-lg leading-snug font-extrabold" aria-live="polite">Preparo unas salidas de ejemplo…</p>
+        <p className="mt-1 text-sm text-slate-600">Una unidad en camino, otra cargando en la parada de salida y una salida confirmada.</p>
+      </div>
     </div>
   );
 }

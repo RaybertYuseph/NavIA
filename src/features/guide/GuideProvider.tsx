@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useCallback, useContext, useState } from 'react';
+import { DEMO, DemoTicker } from './demoSim';
 import { NaviaTour } from './NaviaTour';
 import { DEFAULT_TAB, type View } from './tours';
 
@@ -37,6 +38,7 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
   return (
     <GuideContext.Provider value={{ view, firstName, tab, setTab, startTour, touring }}>
       {children}
+      {DEMO && <DemoTicker />}
       <NaviaTour
         key={tour?.key ?? 'auto'}
         view={view}

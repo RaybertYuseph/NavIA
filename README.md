@@ -82,6 +82,7 @@ supabase/
   migrations/0010_hora_al_activarse.sql  la hora de salida la pone el conductor al activarse; el reinicio de la demo empieza el día vacío
   migrations/0011_salidas_viejas_abiertas.sql  una salida de un día anterior que quedó abierta ya no bloquea la unidad
   migrations/0012_reinicio_demo.sql  vuelve a dejar "Reiniciar demo" como en la versión final de la 0010
+  migrations/0013_simulacion_demo.sql  demo: salidas de ejemplo que se mueven solas, para el tour y el botón "Simular salidas"
   demo.sql                     cuentas, unidades y salidas de la demo
   rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
   rutas_regreso.sql            la vuelta desde la USM de cada ruta de ida (paradas invertidas; después de la 0007)
