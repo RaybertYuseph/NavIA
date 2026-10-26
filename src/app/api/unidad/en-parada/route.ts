@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { createServerClient } from '@/lib/supabase/server';
 
-const body = z.object({ vehicle_id: z.guid(), route_id: z.guid(), depart_in: z.number().int().min(0).max(120).optional() });
+const body = z.object({ vehicle_id: z.guid(), route_id: z.guid(), depart_at: z.string().datetime({ offset: true }).optional() });
 
 /**
- * El conductor se activa disponible en la parada de salida de una ruta y dice en cuántos minutos
+ * El conductor se activa disponible en la parada de salida de una ruta y escribe a qué hora
  * sale. La BD crea la salida a esa hora o toma la que el fiscal anunció cerca de ella (0010).
  */
 export async function POST(req: Request) {
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({ error: 'Datos inválidos' }, { status: 400 });
 
   const args = { p_vehicle_id: parsed.data.vehicle_id, p_route_id: parsed.data.route_id };
-  let { data, error } = await supabase.rpc('set_available_at_stop', { ...args, p_depart_in: parsed.data.depart_in ?? 0 });
+  let { data, error } = await supabase.rpc('set_available_at_stop', { ...args, p_depart_at: parsed.data.depart_at ?? new Date().toISOString() });
   // Sin la migración 0010 la función no recibe la hora: sale ahora.
   if (error?.code === 'PGRST202') ({ data, error } = await supabase.rpc('set_available_at_stop', args));
   if (error) {

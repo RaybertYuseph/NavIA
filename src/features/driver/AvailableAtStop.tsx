@@ -5,12 +5,12 @@ import { Icon } from '@/components/icons';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { routeKey, type RouteInfo, type Vehicle } from '@/features/trips/types';
 import { VehiclePhoto } from '@/features/vehicles/VehiclePhoto';
-import { formatHour } from '@/lib/time';
-import { DepartTimePicker, departAt, postAtStop } from './DepartTime';
+import { caracasNowHHMM } from '@/lib/time';
+import { DepartTimePicker, postAtStop, showHHMM } from './DepartTime';
 
 /**
- * Sin salida a su cargo, el conductor se activa en la parada de salida y elige cuándo sale
- * (ahora, 10, 20 o 30 min): esa es la salida que ve el estudiante. Las rutas que ofrece son las
+ * Sin salida a su cargo, el conductor se activa en la parada de salida y escribe a qué hora sale
+ * (hora y minuto de hoy): esa es la salida que ve el estudiante. Las rutas que ofrece son las
  * del corredor de su unidad (ida y regreso); si la unidad no tiene ruta, todas.
  */
 export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: Vehicle[]; routes: RouteInfo[]; myVehicleId: string | null }) {
@@ -22,7 +22,7 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
   const [routeId, setRouteId] = useState<string | null>(null);
   const route = options.find((r) => r.id === routeId) ?? options.find((r) => r.id === home?.id) ?? options[0] ?? null;
   const stop = route ? [...route.stops].sort((a, b) => a.seq - b.seq)[0] : null;
-  const [departIn, setDepartIn] = useState(0);
+  const [departAt, setDepartAt] = useState(caracasNowHHMM);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +30,8 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
     if (!vehicle || !route) return;
     setBusy(true);
     setError(null);
-    const e = await postAtStop(vehicle.id, route.id, departIn);
+    if (!departAt) return setError('Escribe la hora de salida.');
+    const e = await postAtStop(vehicle.id, route.id, departAt);
     if (e) {
       setBusy(false);
       return setError(e);
@@ -54,7 +55,7 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
       <div className="flex items-center gap-3">
         <NaviaAgent size={56} animated compact className="shrink-0" />
         <p className="text-sm font-medium text-slate-600">
-          ¡Epa! Cuando estés en la parada de salida, dime cuándo sales y se lo muestro a los estudiantes.
+          ¡Epa! Cuando estés en la parada de salida, dime a qué hora sales y se lo muestro a los estudiantes.
         </p>
       </div>
 
@@ -103,7 +104,7 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
         </fieldset>
       )}
 
-      <DepartTimePicker value={departIn} onChange={setDepartIn} disabled={busy} />
+      <DepartTimePicker value={departAt} onChange={setDepartAt} disabled={busy} />
 
       <div className="flex items-center gap-3">
         <VehiclePhoto vehicle={vehicle} size="sm" />
@@ -120,7 +121,7 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
       >
         <span className="block text-sm font-semibold opacity-90">
           <Icon name="pin" className="mr-1 inline h-4 w-4" />
-          {busy ? 'Creando tu salida…' : `Ya estoy en la parada · salgo ${departIn === 0 ? 'ahora' : `a las ${formatHour(departAt(departIn))}`}`}
+          {busy ? 'Creando tu salida…' : departAt ? `Ya estoy en la parada · salgo a las ${showHHMM(departAt)}` : 'Escribe la hora de salida'}
         </span>
         <span className="block text-2xl leading-tight font-extrabold">Estoy disponible en {stop.name}</span>
       </button>

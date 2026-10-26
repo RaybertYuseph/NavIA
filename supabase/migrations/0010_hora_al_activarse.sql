@@ -1,20 +1,21 @@
 -- NavIA · corte 2: la hora de salida la pone el conductor al activarse en la parada de salida.
 --
--- set_available_at_stop() recibe en cuántos minutos sale el conductor ("Ahora", 10, 20 o 30) y
--- crea la salida a esa hora. Solo toma una salida que el fiscal anunció si queda a 10 minutos o
+-- set_available_at_stop() recibe la hora de salida que escribe el conductor (hora y minuto de hoy)
+-- y crea la salida a esa hora. Solo toma una salida que el fiscal anunció si queda a 10 minutos o
 -- menos de esa hora. La hora real de salida sigue siendo started_at ("Ya subieron todos").
 -- reset_demo_today() ya no deja horarios fijos: borra las salidas de hoy (con sus marcas) y el día
 -- empieza vacío, como en la calle. El fiscal puede anunciar una con "Nueva salida".
 
--- p_depart_in: en cuántos minutos sale ("Ahora" = 0, 10, 20 o 30); sin él, ahora y sin mover una
--- salida que ya tenga. La versión de 2 parámetros se reemplaza para que las llamadas no sean ambiguas.
+-- p_depart_at: la hora que el conductor escribe (hoy, al minuto); sin ella, ahora y sin mover una
+-- salida que ya tenga. Se reemplazan las versiones anteriores para que las llamadas no sean ambiguas.
 drop function if exists set_available_at_stop(uuid, uuid);
-create or replace function set_available_at_stop(p_vehicle_id uuid, p_route_id uuid, p_depart_in int default null) returns uuid
+drop function if exists set_available_at_stop(uuid, uuid, int);
+create or replace function set_available_at_stop(p_vehicle_id uuid, p_route_id uuid, p_depart_at timestamptz default null) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
   op     uuid := my_operator();
   today  date := (now() at time zone 'America/Caracas')::date;
-  target timestamptz := date_trunc('minute', now()) + make_interval(mins => greatest(0, least(coalesce(p_depart_in, 0), 120)));
+  target timestamptz := date_trunc('minute', coalesce(p_depart_at, now()));
   trip   uuid;
 begin
   if my_role() is distinct from 'driver' or op is null then
@@ -26,6 +27,9 @@ begin
   if not exists (select 1 from routes where id = p_route_id and operator_id = op and active and not coming_soon) then
     raise exception 'Esa ruta no está disponible' using errcode = '22023';
   end if;
+  if (target at time zone 'America/Caracas')::date <> today or target < date_trunc('minute', now()) - interval '5 minutes' then
+    raise exception 'La hora de salida debe ser de hoy y no del pasado' using errcode = '22023', hint = 'hora_invalida';
+  end if;
 
   -- Si ya tiene una salida abierta de hoy con esta unidad, es esa (tocar dos veces no duplica). Si
   -- todavía no arranca, toma la hora nueva: así el conductor puede corregir "Salgo en…".
@@ -34,7 +38,7 @@ begin
     and (scheduled_at at time zone 'America/Caracas')::date = today
   order by scheduled_at limit 1;
   -- (Un "Llegué" deshecho deja eventos pero la salida vuelve a programada: vale started_at.)
-  if trip is not null and p_depart_in is not null
+  if trip is not null and p_depart_at is not null
      and exists (select 1 from trips where id = trip and status = 'scheduled' and started_at is null and scheduled_at <> target) then
     if exists (select 1 from trips o, trips t where t.id = trip and o.route_id = t.route_id and o.scheduled_at = target and o.id <> t.id) then
       raise exception 'Ya hay otra salida de esa ruta a esa hora' using errcode = '23505', hint = 'hora_ocupada';
@@ -72,8 +76,8 @@ begin
   where id = p_vehicle_id;
   return trip;
 end $$;
-revoke execute on function set_available_at_stop(uuid, uuid, int) from public, anon;
-grant execute on function set_available_at_stop(uuid, uuid, int) to authenticated;
+revoke execute on function set_available_at_stop(uuid, uuid, timestamptz) from public, anon;
+grant execute on function set_available_at_stop(uuid, uuid, timestamptz) to authenticated;
 
 create or replace function reset_demo_today() returns int
 language plpgsql security definer set search_path = public as $$

@@ -47,7 +47,8 @@ function howFar(m: number) {
  * bus pasa por esa parada la espera se da por recogida. En la demo se puede simular la ubicación.
  */
 export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferredTripId: string | null }) {
-  const open = trips.filter((t) => pendingStops(t).length > 0 || isLive(t));
+  // Solo salidas con unidad confirmada o en camino: las que esperan unidad no tienen hora segura.
+  const open = trips.filter((t) => (t.vehicle_id && pendingStops(t).length > 0) || isLive(t));
   const [wait, setWait] = useState<MyWait | null>(null);
   const [tripId, setTripId] = useState<string | null>(null);
   const [stopId, setStopId] = useState<string>('');

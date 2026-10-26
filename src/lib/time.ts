@@ -44,3 +44,8 @@ export function nextHalfHours(count: number, now = new Date()) {
   for (; out.length < count && m < 24 * 60; m += 30) out.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
   return out;
 }
+
+/** Hora y minuto actuales en Caracas ("14:07"), para el campo de hora de salida. */
+export function caracasNowHHMM(now = new Date()) {
+  return new Date(now.getTime() + CARACAS_OFFSET_MS).toISOString().slice(11, 16);
+}

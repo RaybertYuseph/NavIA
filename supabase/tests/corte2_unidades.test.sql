@@ -117,10 +117,10 @@ reset role;
 select pg_temp.assert((select vehicle_id is null from trips where id = (select id from lejana)), 'una salida anunciada para más tarde no se toma antes de tiempo');
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
-select pg_temp.assert((select set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', 20) = trip from u),
+select pg_temp.assert((select set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', now() + interval '20 minutes') = trip from u),
   'volver a activarse no crea otra salida');
 select pg_temp.assert((select scheduled_at = date_trunc('minute', now()) + interval '20 minutes' from trips where id = (select trip from u)),
-  '"Salgo en 20 min" corrige la hora de su salida');
+  'la hora escrita por el conductor corrige la de su salida');
 reset role;
 reset role;
 insert into trip_events (trip_id, type, stop_id, actor_id, client_event_id, occurred_at)
@@ -130,7 +130,7 @@ insert into trip_events (trip_id, type, actor_id, client_event_id, occurred_at, 
 select trip, 'correccion', '00000000-0000-0000-0000-0000000000d1', gen_random_uuid(), now() + interval '1 second', 'scheduled' from u;
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
-select set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', 30) from u;
+select set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', now() + interval '30 minutes') from u;
 select pg_temp.assert((select scheduled_at = date_trunc('minute', now()) + interval '30 minutes' from trips where id = (select trip from u)),
   'tras deshacer "Llegué" se puede cambiar la hora');
 reset role;
@@ -138,8 +138,16 @@ insert into trips (route_id, scheduled_at) values ('00000000-0000-0000-0000-0000
 set role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
 do $$ begin
-  perform set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', 40) from u;
+  perform set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', now() + interval '40 minutes') from u;
   raise exception 'FALLO: se movió a una hora ocupada sin avisar';
 exception when unique_violation then raise notice 'ok: una hora ocupada en la ruta avisa en vez de no hacer nada';
+end $$;
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000d1', false);
+do $$ begin
+  perform set_available_at_stop(id, '00000000-0000-0000-0000-000000000030', now() - interval '2 hours') from u;
+  raise exception 'FALLO: se aceptó una hora pasada';
+exception when invalid_parameter_value then raise notice 'ok: no se acepta una hora de salida pasada';
 end $$;
 reset role;
