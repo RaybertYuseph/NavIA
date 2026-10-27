@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { priceBuckets, summarize, toCsv, type Encuesta } from '@/features/encuestas/kpis';
+import { funnel, priceBuckets, summarize, toCsv, wilson, type DemoEvento, type Encuesta } from '@/features/encuestas/kpis';
 import { priceFor } from '@/features/guide/surveys';
 
 let id = 0;
@@ -56,7 +56,7 @@ describe('tablero de encuestas', () => {
     const est = ['29.5', '41.3', '41.3', '10', '100'].map((precio) => row('estudiante', { precio }));
     const p = priceBuckets(est, [29.5, 41.3, 64.9, 88.5]);
     expect(p.total).toBe(5);
-    expect(p.buckets.map((b) => b.n)).toEqual([1, 1, 2, 0, 0, 1]);
+    expect(p.buckets.map((b) => b.n)).toEqual([0, 1, 1, 2, 0, 0, 1]);
     expect(p.medianPct).toBeCloseTo(3.5);
   });
 
@@ -64,6 +64,7 @@ describe('tablero de encuestas', () => {
     const cond = ['190', '60', '60', '45'].map((precio) => row('conductor-fiscal', { rol: 'Conductor', precio }));
     const s = summarize(cond).precioConductores;
     expect(s.buckets.map((b) => [b.label.split(' ·')[0], b.n])).toEqual([
+      ['Nada', 0],
       ['Menos de 60\u00a0Bs', 1],
       ['60\u00a0Bs', 2],
       ['90\u00a0Bs', 0],
@@ -78,9 +79,46 @@ describe('tablero de encuestas', () => {
     expect(s.alternativas.map((a) => a.texto)).toEqual(['cuota fija semanal']);
   });
 
-  it('el CSV escapa comillas y lleva el correo', () => {
-    const csv = toCsv([row('estudiante', { falta: 'que diga "ya llegó"' }, 'r@n.co')]);
-    expect(csv.split('\n')[1]).toContain('"que diga ""ya llegó"""');
-    expect(csv).toContain('"r@n.co"');
+  it('el CSV escapa comillas y solo lleva correos si se piden', () => {
+    const rows = [row('estudiante', { falta: 'que diga "ya llegó"' }, 'r@n.co')];
+    expect(toCsv(rows).split('\n')[1]).toContain('"que diga ""ya llegó"""');
+    expect(toCsv(rows)).not.toContain('r@n.co');
+    expect(toCsv(rows, true)).toContain('"r@n.co"');
+  });
+
+  it('los KPI solo cuentan el segmento Guarenas/Guatire; sin ruta (respuestas viejas) cuenta como segmento', () => {
+    const est = [
+      ...Array.from({ length: 6 }, () => row('estudiante', { ruta: 'Guatire', usaria: 'Sí, seguro' })),
+      ...Array.from({ length: 4 }, () => row('estudiante', { usaria: 'Probablemente' })),
+      ...Array.from({ length: 5 }, () => row('estudiante', { ruta: 'Los Teques', usaria: 'No' })),
+      row('estudiante', { ruta: 'Otra: Caucagüita', usaria: 'No' }),
+    ];
+    const s = summarize(est);
+    expect(s.estudiantes).toBe(10);
+    expect(s.fueraDeSegmento).toBe(6);
+    expect(s.principal[0].display).toBe('100 %');
+    expect(s.rutas.estudiantes).toEqual([['Guatire', 6], ['Los Teques', 5], ['Sin dato', 4], ['Otra', 1]]);
+  });
+
+  it('«no pagaría nada» se guarda 0 y hace fallar la meta de precio', () => {
+    const est = Array.from({ length: 10 }, (_, n) => row('estudiante', { precio: n < 8 ? '0' : '29.5' }));
+    const s = summarize(est);
+    expect(s.apoyoC[0].display).toBe('20 %');
+    expect(s.apoyoC[0].status).toBe('refuta');
+    expect(s.precioEstudiantes.buckets[0]).toEqual({ label: 'Nada', n: 8 });
+  });
+
+  it('el rango de Wilson acota una tasa con muestra chica', () => {
+    const [lo, hi] = wilson(24, 40);
+    expect(lo).toBeCloseTo(44.6, 0);
+    expect(hi).toBeCloseTo(73.7, 0);
+  });
+
+  it('el embudo cuenta personas distintas por paso, enlace, día y canal', () => {
+    const ev = (visitante: string, evento: DemoEvento['evento'], canal = 'whatsapp'): DemoEvento => ({ created_at: '2026-10-28T14:00:00Z', audiencia: 'estudiante', evento, canal, visitante });
+    const f = funnel([ev('a', 'visita'), ev('a', 'visita'), ev('b', 'visita', 'usm'), ev('a', 'entrada'), ev('a', 'tour'), ev('a', 'encuesta')]);
+    expect(f.porEnlace[0].pasos.map((p) => p.n)).toEqual([2, 1, 0, 1, 1]);
+    expect(f.porEnlace[1].pasos).toHaveLength(4);
+    expect(f.diario.map((d) => [d.canal, d.visita, d.encuesta])).toEqual([['usm', 1, 0], ['whatsapp', 1, 1]]);
   });
 });

@@ -3,8 +3,8 @@ import { PASAJE, SURVEYS, fmtBs, fmtPct, pctOf, type Question } from '@/features
 
 /** Qué ficha mide cada pregunta (ver surveys.ts); sin entrada, es de diagnóstico. */
 const KPI: Record<Audience, Record<string, string>> = {
-  estudiante: { usaria: 'KPI principal', piloto: 'KPI principal', util: 'Apoyo A', facil: 'Apoyo A', whatsapp: 'Apoyo A', precio: 'Apoyo C' },
-  'conductor-fiscal': { usaria: 'Apoyo B', precio: 'Apoyo C', reparto: 'Apoyo C' },
+  estudiante: { ruta: 'Filtro de segmento', usaria: 'KPI principal', piloto: 'KPI principal', util: 'Apoyo A', facil: 'Apoyo A', whatsapp: 'Apoyo A', precio: 'Apoyo C' },
+  'conductor-fiscal': { ruta: 'Filtro de segmento', usaria: 'Apoyo B', precio: 'Apoyo C', reparto: 'Apoyo C' },
 };
 
 const TITLE: Record<Audience, { title: string; link: string }> = {
@@ -42,6 +42,7 @@ function Answers({ q }: { q: Question }) {
                 <span className="text-slate-500">{fmtPct(pctOf(bs))} del pasaje</span>
               </li>
             ))}
+            <li className={opt}>{q.none} (se guarda 0 Bs)</li>
             <li className={opt}>Otro valor (libre, en Bs)</li>
           </ul>
           <p className="mt-1.5 text-xs text-slate-500">

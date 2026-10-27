@@ -5,6 +5,7 @@ import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { readAudience } from '@/features/auth/demoAccess';
 import { DemoSurveyCard } from './DemoSurveyCard';
 import { saveTour } from './demoProgress';
+import { trackDemo } from './demoTrack';
 import { TourScene } from './TourScenes';
 import { startDemoSimulation } from './demoSim';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
@@ -255,7 +256,10 @@ export function NaviaTour(props: {
     onBack: i > 0 ? () => setPhase(i - 1) : undefined,
     onNext: () => {
       if (!isLast) return setPhase(i + 1);
-      if (DEMO) saveTour(view, i, steps.length, true);
+      if (DEMO) {
+        saveTour(view, i, steps.length, true);
+        trackDemo('tour');
+      }
       finish();
     },
     onSkip: isLast ? undefined : finish,

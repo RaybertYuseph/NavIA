@@ -38,7 +38,7 @@ export function DemoSurveyCard(props: { view: View; audience: Audience; onAnswer
 
   const text = otherRole
     ? `¡Eso es todo por aquí! ¿Te muestro ahora la vista del ${otherRole.title.toLowerCase()}?`
-    : '¡Listo! ¿Me regalas un minuto? Son 7 preguntas y con tu opinión decidimos cómo llega NavIA a la ruta.';
+    : '¡Listo! ¿Me regalas un minuto? Son 8 preguntas y con tu opinión decidimos cómo llega NavIA a la ruta.';
   const { shown, done, skip } = useTypewriter(text);
 
   async function goOther() {
@@ -57,7 +57,7 @@ export function DemoSurveyCard(props: { view: View; audience: Audience; onAnswer
 
   const answer = (
     <button type="button" autoFocus={!otherRole} onClick={onAnswer} className={otherRole ? 'btn-ghost' : 'btn-primary'}>
-      {otherRole ? 'Responder la encuesta ya' : 'Responder (7 preguntas)'}
+      {otherRole ? 'Responder la encuesta ya' : 'Responder (8 preguntas)'}
     </button>
   );
 

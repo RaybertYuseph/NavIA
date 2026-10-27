@@ -4,9 +4,10 @@ import { SURVEYS, visibleQuestions } from '@/features/guide/surveys';
 const ids = (a: Record<string, string>, audience: keyof typeof SURVEYS = 'estudiante') => visibleQuestions(SURVEYS[audience], a).map((q) => q.id);
 
 describe('encuestas de la demo', () => {
-  it('son 7 preguntas para quien la usaría', () => {
-    expect(ids({ usaria: 'Sí, seguro' })).toHaveLength(7);
-    expect(ids({ usaria: 'Probablemente' }, 'conductor-fiscal')).toHaveLength(7);
+  it('son 8 preguntas para quien la usaría, empezando por la ruta', () => {
+    expect(ids({ usaria: 'Sí, seguro' })).toHaveLength(8);
+    expect(ids({ usaria: 'Probablemente' }, 'conductor-fiscal')).toHaveLength(8);
+    for (const qs of Object.values(SURVEYS)) expect(qs[0].id).toBe('ruta');
     expect(ids({})).not.toContain('falta');
   });
 
@@ -14,7 +15,7 @@ describe('encuestas de la demo', () => {
     for (const audience of ['estudiante', 'conductor-fiscal'] as const) {
       for (const usaria of ['No sé', 'No']) {
         const shown = ids({ usaria }, audience);
-        expect(shown).toHaveLength(8);
+        expect(shown).toHaveLength(9);
         expect(shown.slice(-2)).toEqual(['falta', 'piloto']);
       }
     }
