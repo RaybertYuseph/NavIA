@@ -2,25 +2,33 @@
 import { useState } from 'react';
 import type { Audience } from '@/features/auth/demoAccess';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
-import { SURVEYS } from './surveys';
+import { FALTA_MAX, SURVEYS, visibleQuestions } from './surveys';
 import type { View } from './tours';
 
 /**
  * Encuesta de 7 preguntas al final del tour de un enlace de demo, una pregunta por pantalla.
- * Tocar una opción pasa a la siguiente; la última (contacto) es opcional.
+ * Tocar una opción pasa a la siguiente; la abierta y la última (contacto) son opcionales.
+ * Quien no la usaría ve además «¿Qué le faltaría?» (ver surveys.ts).
  */
 export function DemoSurvey({ audience, view, onClose }: { audience: Audience; view: View; onClose: () => void }) {
-  const questions = SURVEYS[audience];
   const [i, setI] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const questions = visibleQuestions(SURVEYS[audience], answers);
   const [contact, setContact] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
   const q = questions[i];
 
   function pick(value: string) {
-    setAnswers((a) => ({ ...a, [q.id]: value }));
-    setTimeout(() => setI((n) => Math.min(n + 1, questions.length - 1)), 220);
+    const next = { ...answers, [q.id]: value };
+    setAnswers(next);
+    const last = visibleQuestions(SURVEYS[audience], next).length - 1;
+    setTimeout(() => setI((n) => Math.min(n + 1, last)), 220);
+  }
+
+  /** Solo lo que se ve: si alguien vuelve y cambia «No» por «Sí», su «¿qué le faltaría?» no se envía. */
+  function shownAnswers() {
+    return Object.fromEntries(questions.map((x) => [x.id, answers[x.id]?.trim()]).filter(([, v]) => v));
   }
 
   async function send() {
@@ -30,7 +38,7 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
       const r = await fetch('/api/encuesta', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ audiencia: audience, vista: view, respuestas: answers, contacto: contact.trim() || undefined }),
+        body: JSON.stringify({ audiencia: audience, vista: view, respuestas: shownAnswers(), contacto: contact.trim() || undefined }),
       });
       if (!r.ok) throw new Error(((await r.json().catch(() => null)) as { error?: string } | null)?.error ?? `Error ${r.status}`);
       setState('sent');
@@ -104,6 +112,27 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                     <span>{q.high}</span>
                   </span>
                 </>
+              )}
+              {q.kind === 'open' && (
+                <form
+                  className="flex flex-col gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setI((n) => Math.min(n + 1, questions.length - 1));
+                  }}
+                >
+                  <textarea
+                    id="encuesta-abierta"
+                    className="field min-h-24 resize-none"
+                    value={answers[q.id] ?? ''}
+                    maxLength={FALTA_MAX}
+                    onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                    placeholder={q.placeholder}
+                  />
+                  <button type="submit" className="btn-primary">
+                    {answers[q.id]?.trim() ? 'Siguiente' : 'Saltar'}
+                  </button>
+                </form>
               )}
               {q.kind === 'contact' && (
                 <form

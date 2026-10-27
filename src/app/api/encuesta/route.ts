@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { FALTA_MAX } from '@/features/guide/surveys';
 import { createServerClient } from '@/lib/supabase/server';
 
 const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
 const body = z.object({
   audiencia: z.enum(['estudiante', 'conductor-fiscal']),
   vista: z.enum(['student', 'driver', 'fiscal']),
-  respuestas: z.record(z.string().max(40), z.string().max(120)),
+  respuestas: z.record(z.string().max(40), z.string().max(FALTA_MAX)),
   contacto: z.string().trim().max(200).optional(),
 });
 
