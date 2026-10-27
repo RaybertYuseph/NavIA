@@ -297,7 +297,7 @@ export function Dashboard(props: { rows: Encuesta[]; error: string | null; event
         <section className="card rounded-3xl p-4">
           <p className="text-xs font-bold tracking-wide text-brand-600 uppercase">Apoyo C · factor precio</p>
           <h2 className="text-lg font-extrabold">Cuánto pagarían por NavIA</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Respuesta libre en Bs, expresada como % del pasaje de 1.180 Bs. La decisión actual es 2,5 % por lado.</p>
+          <p className="mt-0.5 text-xs text-slate-500">Respuesta en % del pasaje de la ruta de cada quien (los Bs son de referencia, sobre 1.180 Bs). Cuenta todas las rutas. La decisión actual es 2,5 % por lado.</p>
           <div className="mt-1 divide-y divide-slate-100">
             {s.apoyoC.map((m) => (
               <MeterRow key={m.label} m={m} />

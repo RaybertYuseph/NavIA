@@ -68,9 +68,9 @@ export function priceBuckets(rows: Encuesta[], amounts: number[]) {
   const near = (v: number, a: number) => Math.abs(v - a) < 0.01;
   const buckets = [
     { label: 'Nada', n: bs.filter((v) => v === 0).length },
-    { label: `Menos de ${fmtBs(edges[0])}`, n: bs.filter((v) => v > 0 && v < edges[0] - 0.01).length },
-    ...edges.map((a) => ({ label: `${fmtBs(a)} · ${fmtPct(pctOf(a))}`, n: bs.filter((v) => near(v, a)).length })),
-    { label: 'Otro valor', n: bs.filter((v) => v >= edges[0] - 0.01 && !edges.some((a) => near(v, a))).length },
+    { label: `Menos de ${fmtPct(pctOf(edges[0]))}`, n: bs.filter((v) => v > 0 && v < edges[0] - 0.01).length },
+    ...edges.map((a) => ({ label: `${fmtPct(pctOf(a))} · ${fmtBs(a)}`, n: bs.filter((v) => near(v, a)).length })),
+    { label: 'Otro porcentaje', n: bs.filter((v) => v >= edges[0] - 0.01 && !edges.some((a) => near(v, a))).length },
   ];
   const sorted = bs.map(pctOf).sort((a, b) => a - b);
   const mid = sorted.length >> 1;
@@ -124,16 +124,20 @@ export function summarize(all: Encuesta[]) {
     },
   ];
 
+  // El precio se responde en % del pasaje de cada ruta, así que cuenta todas las rutas, no solo el segmento.
   const minimo = COMISION_LADO;
-  const conPrecio = est.filter((r) => precio(r) !== null);
+  const estTodas = all.filter((r) => r.audiencia === 'estudiante');
+  const condTodas = all.filter((r) => r.audiencia === 'conductor-fiscal' && r.respuestas.rol === 'Conductor');
+  const condPrecioAll = condTodas.length >= PRUEBA.conductores;
+  const conPrecio = estTodas.filter((r) => precio(r) !== null);
   const paga = (r: Encuesta) => pctOf(precio(r)!) >= minimo - 0.05;
   const estPaga = share(conPrecio, paga);
-  const estPrecio = est.filter((r) => precio(r) !== null).length;
-  const condPaga = cond.filter((r) => precio(r) !== null && pctOf(precio(r)!) >= minimo - 0.05).length;
+  const estPrecio = conPrecio.length;
+  const condPaga = condTodas.filter((r) => precio(r) !== null && paga(r)).length;
   const cond5050 = cond.filter((r) => r.respuestas.reparto?.startsWith('50/50')).length;
   const apoyoC: Meter[] = [
     { label: `Estudiantes que pagarían ${minimo.toLocaleString('es-VE')} % o más`, value: estPaga, display: pct(estPaga), target: 50, refute: 25, unit: '%', status: status(estPaga, 50, 25, estPrecio >= MIN_ESTUDIANTES), range: rangeOf(conPrecio, paga) },
-    { label: `Conductores que ven justo ${minimo.toLocaleString('es-VE')} % o más`, value: condPaga, display: `${condPaga} de ${Math.max(cond.length, PRUEBA.conductores)}`, target: 3, refute: 2, unit: 'de 5', status: condPaga >= 3 ? 'confirma' : condAll ? status(condPaga, 3, 2, true) : 'pocas' },
+    { label: `Conductores que ven justo ${minimo.toLocaleString('es-VE')} % o más`, value: condPaga, display: `${condPaga} de ${Math.max(condTodas.length, PRUEBA.conductores)}`, target: 3, refute: 2, unit: 'de 5', status: condPaga >= 3 ? 'confirma' : condPrecioAll ? status(condPaga, 3, 2, true) : 'pocas' },
     { label: 'Conductores que aceptan el 50/50', value: cond5050, display: `${cond5050} de ${Math.max(cond.length, PRUEBA.conductores)}`, target: 3, refute: 2, unit: 'de 5', status: cond5050 >= 3 ? 'confirma' : condAll ? status(cond5050, 3, 2, true) : 'pocas' },
   ];
 
@@ -159,8 +163,8 @@ export function summarize(all: Encuesta[]) {
     apoyoA,
     apoyoB,
     apoyoC,
-    precioEstudiantes: priceBuckets(est, PRICE_PERCENTS.map((p) => priceFor(p))),
-    precioConductores: priceBuckets(cond, DRIVER_AMOUNTS),
+    precioEstudiantes: priceBuckets(estTodas, PRICE_PERCENTS.map((p) => priceFor(p))),
+    precioConductores: priceBuckets(condTodas, DRIVER_AMOUNTS),
     porDia: [...porDia.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([dia, n]) => ({ dia, ...n })),
     alternativas: cond.filter((r) => r.respuestas.reparto?.startsWith(OTRA)).map((r) => ({ id: r.id, texto: r.respuestas.reparto.slice(OTRA.length) })),
     faltas: rows.filter((r) => r.respuestas.falta).map((r) => ({ id: r.id, audiencia: r.audiencia, texto: r.respuestas.falta, fecha: r.created_at })),

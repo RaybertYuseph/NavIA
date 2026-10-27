@@ -65,12 +65,12 @@ describe('tablero de encuestas', () => {
     const s = summarize(cond).precioConductores;
     expect(s.buckets.map((b) => [b.label.split(' ·')[0], b.n])).toEqual([
       ['Nada', 0],
-      ['Menos de 60\u00a0Bs', 1],
-      ['60\u00a0Bs', 2],
-      ['90\u00a0Bs', 0],
-      ['130\u00a0Bs', 0],
-      ['190\u00a0Bs', 1],
-      ['Otro valor', 0],
+      ['Menos de 5,1 %', 1],
+      ['5,1 %', 2],
+      ['7,6 %', 0],
+      ['11 %', 0],
+      ['16,1 %', 1],
+      ['Otro porcentaje', 0],
     ]);
   });
 
@@ -106,6 +106,17 @@ describe('tablero de encuestas', () => {
     expect(s.apoyoC[0].display).toBe('20 %');
     expect(s.apoyoC[0].status).toBe('refuta');
     expect(s.precioEstudiantes.buckets[0]).toEqual({ label: 'Nada', n: 8 });
+  });
+
+  it('el precio va en % del pasaje de cada ruta, así que cuenta todas las rutas', () => {
+    const est = [
+      ...Array.from({ length: 5 }, () => row('estudiante', { ruta: 'Guarenas', precio: '41.3' })),
+      ...Array.from({ length: 5 }, () => row('estudiante', { ruta: 'Los Teques', precio: '0' })),
+    ];
+    const s = summarize(est);
+    expect(s.estudiantes).toBe(5);
+    expect(s.apoyoC[0].display).toBe('50 %');
+    expect(s.precioEstudiantes.total).toBe(10);
   });
 
   it('el rango de Wilson acota una tasa con muestra chica', () => {
