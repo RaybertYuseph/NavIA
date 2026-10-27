@@ -4,7 +4,7 @@ import type { Audience } from '@/features/auth/demoAccess';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { readSurvey, saveSurvey } from './demoProgress';
 import { readCanal, trackDemo } from './demoTrack';
-import { CORREO_MAX, FALTA_MAX, OTRA, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, visibleQuestions } from './surveys';
+import { CORREO_MAX, FALTA_MAX, OTRA, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, priceFor, visibleQuestions } from './surveys';
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 import type { View } from './tours';
@@ -35,7 +35,9 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
   const q = questions[Math.min(i, questions.length - 1)];
-  const customBs = custom.trim() ? Number(custom.replace(',', '.')) : NaN;
+  // «Otro» se escribe en % del pasaje y se guarda en Bs sobre el pasaje de referencia, como las opciones.
+  const customPct = custom.trim() ? Number(custom.replace(',', '.')) : NaN;
+  const customBs = customPct >= 0 && customPct <= 100 ? priceFor(customPct) : NaN;
 
   useEffect(() => {
     // Abrir y cerrar sin responder no cuenta como avance (ni borra una encuesta ya enviada).
@@ -195,8 +197,8 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                           on ? 'bg-brand-50 ring-2 ring-brand-400' : 'bg-slate-50 ring-1 ring-slate-200'
                         }`}
                       >
-                        <span className="text-base font-extrabold">{fmtBs(bs)}</span>
-                        <span className="text-xs font-semibold text-slate-500">{fmtPct(pctOf(bs))} del pasaje</span>
+                        <span className="text-base font-extrabold">{fmtPct(pctOf(bs))} del pasaje</span>
+                        <span className="text-xs font-semibold text-slate-500">{fmtBs(bs)} en uno de {fmtBs(PASAJE)}</span>
                       </button>
                     );
                   })}
@@ -220,25 +222,25 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                     }}
                   >
                     <label className="relative flex-1">
-                      <span className="sr-only">Otro valor en Bs</span>
+                      <span className="sr-only">Otro porcentaje del pasaje</span>
                       <input
                         id="encuesta-precio"
                         className="field pr-10"
                         inputMode="decimal"
                         value={custom}
-                        onChange={(e) => setCustom(e.target.value.replace(/[^\d.,]/g, '').slice(0, 8))}
-                        placeholder="Otro valor"
+                        onChange={(e) => setCustom(e.target.value.replace(/[^\d.,]/g, '').slice(0, 5))}
+                        placeholder="Otro porcentaje"
                       />
-                      <span className="absolute top-1/2 right-3 -translate-y-1/2 text-sm font-semibold text-slate-400">Bs</span>
+                      <span className="absolute top-1/2 right-3 -translate-y-1/2 text-sm font-semibold text-slate-400">%</span>
                     </label>
                     <button type="submit" disabled={!Number.isFinite(customBs)} className="btn-primary px-4 disabled:opacity-50">
                       OK
                     </button>
                   </form>
                   <p className="rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-800">
-                    {Number.isFinite(customBs) && <b className="block">{`${fmtBs(customBs)} es el ${fmtPct(pctOf(customBs))} del pasaje actual.`}</b>}
-                    Los montos son sobre el pasaje actual de {fmtBs(PASAJE)}. El valor queda anclado como porcentaje del pasaje: si el pasaje sube o baja, el monto se ajusta en la
-                    misma proporción.
+                    {Number.isFinite(customBs) && <b className="block">{`${fmtPct(customPct)} son ${fmtBs(customBs)} en un pasaje de ${fmtBs(PASAJE)}.`}</b>}
+                    Los Bs son de referencia, sobre el pasaje de {fmtBs(PASAJE)} de Guarenas/Guatire. Si tu ruta tiene otro pasaje, se ajusta al mismo porcentaje del tuyo; y si el pasaje
+                    sube o baja, el monto se mueve en la misma proporción.
                   </p>
                 </>
               )}

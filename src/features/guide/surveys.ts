@@ -34,7 +34,10 @@ export type Question = (
 
 /** Pasaje actual de la ruta Guarenas/Guatire → USM (Bs). */
 export const PASAJE = 1180;
-export const PRICE_PERCENTS = [2.5, 3.5, 5.5, 7.5];
+/** Comisión decidida por lado; el KPI C mide cuántos aceptan pagar al menos esto. */
+export const COMISION_LADO = 2.5;
+/** Montos que ve el estudiante, en % del pasaje (sin el 2,5 %: el KPI cuenta igual las respuestas libres). */
+export const PRICE_PERCENTS = [3.5, 5.5, 7.5, 10];
 /**
  * Conductor: montos más altos que los del estudiante, de mayor a menor, porque con el 50/50
  * (pregunta siguiente) solo aporta la mitad de lo que elija.
@@ -59,7 +62,7 @@ export const SURVEYS: Record<Audience, Question[]> = {
     { id: 'util', kind: 'scale', text: '¿Qué tan útil te pareció lo que viste?', low: 'Nada útil', high: 'Muy útil' },
     { id: 'facil', kind: 'scale', text: '¿Qué tan fácil te pareció usar NavIA?', low: 'Muy difícil', high: 'Muy fácil' },
     { id: 'whatsapp', kind: 'choice', text: 'Con NavIA, ¿dejarías de preguntar en el grupo de WhatsApp dónde viene la camioneta?', options: ['Sí', 'A veces', 'No'] },
-    { id: 'precio', kind: 'price', amounts: PRICE_PERCENTS.map((p) => priceFor(p)), none: 'No pagaría nada adicional', text: 'Respuesta honesta: tomando en cuenta estos beneficios, ¿cuál sería el valor adicional sumado al pasaje que estarías dispuesto a pagar?' },
+    { id: 'precio', kind: 'price', amounts: PRICE_PERCENTS.map((p) => priceFor(p)), none: 'No pagaría nada adicional', text: 'Respuesta honesta: tomando en cuenta estos beneficios, ¿qué porcentaje adicional sobre tu pasaje estarías dispuesto a pagar?' },
     { id: 'favorita', kind: 'choice', text: '¿Qué te sirvió más?', options: ['Ver la camioneta en el mapa', 'El aviso cuando llega', '«Estoy aquí» en mi parada', 'Preguntarle a NavIA'] },
     { id: 'falta', kind: 'open', showIf: NO_ADOPTA, text: '¿Qué le faltaría a NavIA para que la usaras en cada viaje?', placeholder: 'Ej.: que funcione sin datos, que avise antes, que sea gratis…' },
     { id: 'piloto', kind: 'contact', text: 'Para terminar, déjanos tu correo.', pilot: 'Quiero entrar al piloto cuando NavIA llegue a mi ruta' },
@@ -70,7 +73,7 @@ export const SURVEYS: Record<Audience, Question[]> = {
     { id: 'usaria', kind: 'choice', text: 'Si la asociación lo aprueba, ¿usarías NavIA en cada salida o para coordinar la línea?', options: ['Sí, seguro', 'Probablemente', 'No sé', 'No'] },
     { id: 'facil', kind: 'scale', text: '¿Qué tan fácil te pareció de usar?', low: 'Muy difícil', high: 'Muy fácil' },
     { id: 'preocupa', kind: 'choice', text: '¿Qué es lo que más te preocupa de usarla?', options: ['Gasto de datos o batería', 'Que me rastreen', 'Distraerme al manejar', 'Nada'] },
-    { id: 'precio', kind: 'price', amounts: DRIVER_AMOUNTS, none: 'NavIA no debería cobrar comisión', text: 'Respuesta honesta: viendo lo que integraría la app, ¿cuál consideras que es el valor adecuado por pasaje por concepto de comisión para NavIA?' },
+    { id: 'precio', kind: 'price', amounts: DRIVER_AMOUNTS, none: 'NavIA no debería cobrar comisión', text: 'Respuesta honesta: viendo lo que integraría la app, ¿qué porcentaje de cada pasaje consideras adecuado como comisión para NavIA?' },
     { id: 'reparto', kind: 'choice', text: 'Sea cual sea el monto, ¿quién debería pagar la comisión de NavIA por cada pasaje?', options: ['La absorbo yo (sale de mi pasaje)', '50/50 con el estudiante (mitad y mitad)', 'Que la pague completa el estudiante'], other: 'Otra alternativa', hint: 'Cuéntanos cómo preferirías que se cobre' },
     { id: 'falta', kind: 'open', showIf: NO_ADOPTA, text: '¿Qué le faltaría a NavIA para que la usaras en tu línea?', placeholder: 'Ej.: que gaste menos datos, que la apruebe la asociación, sin comisión…' },
     { id: 'piloto', kind: 'contact', text: 'Para terminar, déjanos tu correo.', pilot: 'Quiero que mi unidad o mi línea esté en el piloto' },

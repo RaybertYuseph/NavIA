@@ -38,15 +38,15 @@ function Answers({ q }: { q: Question }) {
           <ul className="flex flex-col gap-1.5">
             {q.amounts.map((bs) => (
               <li key={bs} className={`${opt} flex justify-between gap-3`}>
-                <b>{fmtBs(bs)}</b>
-                <span className="text-slate-500">{fmtPct(pctOf(bs))} del pasaje</span>
+                <b>{fmtPct(pctOf(bs))} del pasaje</b>
+                <span className="text-slate-500">{fmtBs(bs)} de referencia</span>
               </li>
             ))}
             <li className={opt}>{q.none} (se guarda 0 Bs)</li>
-            <li className={opt}>Otro valor (libre, en Bs)</li>
+            <li className={opt}>Otro porcentaje (libre)</li>
           </ul>
           <p className="mt-1.5 text-xs text-slate-500">
-            Leyenda: los montos son sobre el pasaje actual de {fmtBs(PASAJE)} y quedan anclados como porcentaje del pasaje.
+            Leyenda: se responde en % del pasaje de la ruta de cada quien; los Bs son de referencia sobre {fmtBs(PASAJE)}.
           </p>
         </>
       );
