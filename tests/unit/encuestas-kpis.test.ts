@@ -98,6 +98,7 @@ describe('tablero de encuestas', () => {
     expect(s.fueraDeSegmento).toBe(6);
     expect(s.principal[0].display).toBe('100 %');
     expect(s.rutas.estudiantes).toEqual([['Guatire', 6], ['Los Teques', 5], ['Sin dato', 4], ['Otra', 1]]);
+    expect(summarize([row('estudiante', { ruta: 'California', usaria: 'Sí, seguro', piloto: 'Sí' })]).otrasRutas).toEqual({ usarian: 1, anotados: 1 });
   });
 
   it('«no pagaría nada» se guarda 0 y hace fallar la meta de precio', () => {
