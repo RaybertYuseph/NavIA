@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { readAudience } from '@/features/auth/demoAccess';
 import { DemoSurveyCard } from './DemoSurveyCard';
+import { saveTour } from './demoProgress';
 import { TourScene } from './TourScenes';
 import { startDemoSimulation } from './demoSim';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
@@ -89,7 +90,8 @@ export function NaviaTour(props: {
   view: View;
   userId: string;
   firstName: string;
-  manual: { ask: boolean } | null;
+  /** Abierto desde el menú o la tarjeta de avance; `from` retoma en ese paso. */
+  manual: { ask: boolean; from?: number } | null;
   onTab: (tab: string) => void;
   onTouring: (on: boolean) => void;
   onClose: () => void;
@@ -99,12 +101,13 @@ export function NaviaTour(props: {
   // Solo los pasos cuyo elemento está en pantalla (o aparece al abrir su pestaña): sin salida a su
   // cargo el conductor no tiene botón de acción ni paradas que mostrar.
   const [steps, setSteps] = useState(() => TOURS[view]);
-  const [phase, setPhaseRaw] = useState<Phase>(manual ? (manual.ask ? 'ask' : DEMO ? 'prep' : 0) : null);
+  const [phase, setPhase] = useState<Phase>(manual ? (manual.ask ? 'ask' : DEMO ? 'prep' : 0) : null);
   const router = useRouter();
-  const setPhase = useCallback(
-    (p: Phase) => {
-      if (p === 0) setSteps(TOURS[view].filter((s) => !s.target || s.tab || findTarget(s.target)));
-      setPhaseRaw(p);
+  const begin = useCallback(
+    (at: number) => {
+      const visible = TOURS[view].filter((s) => !s.target || s.tab || findTarget(s.target));
+      setSteps(visible);
+      setPhase(Math.min(at, visible.length - 1));
     },
     [view],
   );
@@ -121,7 +124,7 @@ export function NaviaTour(props: {
   // Automático: solo la primera vez de esta cuenta en este teléfono.
   useEffect(() => {
     if (manual || readSeen(userId)) return;
-    const t = setTimeout(() => setPhaseRaw('ask'), 700);
+    const t = setTimeout(() => setPhase('ask'), 700);
     return () => clearTimeout(t);
   }, [manual, userId]);
 
@@ -134,14 +137,19 @@ export function NaviaTour(props: {
       const created = await startDemoSimulation();
       if (created) router.refresh();
       await new Promise((r) => setTimeout(r, created ? 1800 : 300));
-      if (alive) setPhase(0);
+      if (alive) begin(manual?.from ?? 0);
     })();
     return () => {
       alive = false;
     };
-  }, [phase, router, setPhase]);
+  }, [phase, router, begin, manual]);
 
   const step = typeof phase === 'number' ? steps[phase] : null;
+
+  // Avance para la tarjeta «Tu avance en la demo»: quien sale a mitad retoma en este paso.
+  useEffect(() => {
+    if (DEMO && typeof phase === 'number') saveTour(view, phase, steps.length);
+  }, [phase, view, steps.length]);
 
   // Una sola NavIA en pantalla: mientras camina, el botón flotante se oculta (vuelve al final).
   useEffect(() => {
@@ -197,7 +205,7 @@ export function NaviaTour(props: {
   }, [step, onTab, walkTo]);
 
   const close = useCallback(() => {
-    setPhaseRaw(null);
+    setPhase(null);
     onClose();
   }, [onClose]);
 
@@ -205,7 +213,7 @@ export function NaviaTour(props: {
     markSeen(userId);
     if (typeof phase === 'number') {
       onTab(DEFAULT_TAB[view]);
-      if (DEMO && readAudience()) return setPhaseRaw('survey');
+      if (DEMO && readAudience()) return setPhase('survey');
     }
     close();
   }, [userId, phase, onTab, view, close]);
@@ -218,7 +226,7 @@ export function NaviaTour(props: {
   }, [phase, finish, close]);
 
   if (phase === null) return null;
-  if (phase === 'ask') return <AskCard firstName={firstName} onYes={() => setPhase(DEMO ? 'prep' : 0)} onNo={finish} />;
+  if (phase === 'ask') return <AskCard firstName={firstName} onYes={() => (DEMO ? setPhase('prep') : begin(0))} onNo={finish} />;
   if (phase === 'prep') return <PrepCard />;
   if (phase === 'survey') {
     const audience = readAudience();
@@ -243,7 +251,11 @@ export function NaviaTour(props: {
     index: i,
     total: steps.length,
     onBack: i > 0 ? () => setPhase(i - 1) : undefined,
-    onNext: () => (isLast ? finish() : setPhase(i + 1)),
+    onNext: () => {
+      if (!isLast) return setPhase(i + 1);
+      if (DEMO) saveTour(view, i, steps.length, true);
+      finish();
+    },
     onSkip: isLast ? undefined : finish,
     isLast,
     onDone: () => setSpoken(i),

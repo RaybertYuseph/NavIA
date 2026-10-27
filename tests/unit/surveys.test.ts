@@ -30,3 +30,13 @@ describe('encuestas de la demo', () => {
     }
   });
 });
+
+describe('avance de la demo', () => {
+  it('el recorrido llega al 100 % solo al terminarlo', async () => {
+    const { tourPercent } = await import('@/features/guide/demoProgress');
+    expect(tourPercent(null)).toBe(0);
+    expect(tourPercent({ at: 2, max: 4, total: 10, done: false })).toBe(50);
+    expect(tourPercent({ at: 9, max: 9, total: 10, done: false })).toBe(99);
+    expect(tourPercent({ at: 9, max: 9, total: 10, done: true })).toBe(100);
+  });
+});

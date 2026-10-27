@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Audience } from '@/features/auth/demoAccess';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
+import { readSurvey, saveSurvey } from './demoProgress';
 import { CORREO_MAX, FALTA_MAX, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, priceFor, visibleQuestions } from './surveys';
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -13,16 +14,27 @@ import type { View } from './tours';
  * Quien no la usaría ve además «¿Qué le faltaría?» (ver surveys.ts).
  */
 export function DemoSurvey({ audience, view, onClose }: { audience: Audience; view: View; onClose: () => void }) {
-  const [i, setI] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Quien cerró la encuesta a mitad la retoma donde quedó (también desde la tarjeta de avance).
+  const [saved] = useState(() => {
+    const p = readSurvey(audience);
+    return p && !p.sent ? p : null;
+  });
+  const [i, setI] = useState(saved?.i ?? 0);
+  const [answers, setAnswers] = useState<Record<string, string>>(saved?.answers ?? {});
   const questions = visibleQuestions(SURVEYS[audience], answers);
-  const [contact, setContact] = useState('');
-  const [pilot, setPilot] = useState(false);
+  const [contact, setContact] = useState(saved?.contact ?? '');
+  const [pilot, setPilot] = useState(saved?.pilot ?? false);
   const [custom, setCustom] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const q = questions[i];
+  const q = questions[Math.min(i, questions.length - 1)];
   const customBs = custom.trim() ? Number(custom.replace(',', '.')) : NaN;
+
+  useEffect(() => {
+    // Abrir y cerrar sin responder no cuenta como avance (ni borra una encuesta ya enviada).
+    if (state !== 'sent' && !Object.keys(answers).length) return;
+    saveSurvey(audience, { i, answers, contact, pilot, sent: state === 'sent' });
+  }, [audience, i, answers, contact, pilot, state]);
 
   function pick(value: string) {
     const next = { ...answers, [q.id]: value };

@@ -11,8 +11,8 @@ type Guide = {
   firstName: string;
   tab: string;
   setTab: (tab: string) => void;
-  /** Abre el recorrido de la vista; `ask` empieza por la pregunta "¿Primera vez que me usas?". */
-  startTour: (ask?: boolean) => void;
+  /** Abre el recorrido de la vista; `ask` empieza por la pregunta "¿Primera vez que me usas?" y `from` retoma en ese paso. */
+  startTour: (ask?: boolean, from?: number) => void;
   /** El tour está abierto y NavIA camina por la pantalla (el botón flotante se oculta). */
   touring: boolean;
   /** En un enlace de demo, abre la encuesta de 7 preguntas de ese público. */
@@ -30,7 +30,7 @@ export function useGuide() {
 /** Estado compartido de la vista: pestaña abierta y el tour de NavIA. */
 export function GuideProvider({ view, userId, firstName, children }: { view: View; userId: string; firstName: string; children: React.ReactNode }) {
   const [tab, setTabState] = useState(DEFAULT_TAB[view]);
-  const [tour, setTour] = useState<{ ask: boolean; key: number } | null>(null);
+  const [tour, setTour] = useState<{ ask: boolean; from?: number; key: number } | null>(null);
   const [touring, setTouring] = useState(false);
   const [survey, setSurvey] = useState(false);
   const openSurvey = useCallback(() => setSurvey(true), []);
@@ -39,7 +39,7 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
     setTabState(next);
     window.scrollTo({ top: 0 });
   }, []);
-  const startTour = useCallback((ask = false) => setTour({ ask, key: Date.now() }), []);
+  const startTour = useCallback((ask = false, from?: number) => setTour({ ask, from, key: Date.now() }), []);
 
   return (
     <GuideContext.Provider value={{ view, firstName, tab, setTab, startTour, touring, openSurvey }}>
