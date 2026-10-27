@@ -123,7 +123,7 @@ function Funnel({ eventos, error }: { eventos: DemoEvento[]; error: string | nul
         <div>
           <p className="text-xs font-bold tracking-wide text-brand-600 uppercase">Embudo · registro diario</p>
           <h2 className="text-lg font-extrabold">Alcanzadas → vieron → actuaron</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Personas distintas (una por navegador) en cada paso, desde que se activó el registro.</p>
+          <p className="mt-0.5 text-xs text-slate-500">Personas distintas (una por navegador) en cada paso, desde que se activó el registro. Entre paréntesis, el % sobre quienes abrieron el enlace; pasa el cursor por el número para ver el detalle.</p>
         </div>
         {f.diario.length > 0 && (
           <a href={csvHref(diarioCsv(f.diario))} download="registro-diario-navia.csv" className="btn-ghost px-3 py-2 text-sm">
@@ -145,14 +145,17 @@ function Funnel({ eventos, error }: { eventos: DemoEvento[]; error: string | nul
                   <p className="text-sm font-bold">{ENLACE[audiencia]}</p>
                   <ul className="mt-2 flex flex-col gap-1.5">
                     {pasos.map((p, i) => (
-                      <li key={p.evento} className="grid grid-cols-[9.5rem_1fr_3.5rem] items-center gap-2 text-xs">
+                      <li key={p.evento} className="grid grid-cols-[9.5rem_1fr_5.5rem] items-center gap-2 text-xs">
                         <span className="text-slate-600">{p.label}</span>
                         <span className="h-3 rounded-full bg-slate-100">
                           <span className="block h-full rounded-full bg-brand-500" style={{ width: `${(p.n / top) * 100}%` }} />
                         </span>
-                        <span className="text-right tabular-nums">
+                        <span
+                          className="whitespace-nowrap text-right tabular-nums"
+                          title={i > 0 && pasos[0].n > 0 ? `${p.n} de ${pasos[0].n} que abrieron el enlace (${Math.round((p.n / pasos[0].n) * 100)} %)` : undefined}
+                        >
                           <b>{p.n}</b>
-                          {i > 0 && pasos[0].n > 0 && <span className="text-slate-400"> {Math.round((p.n / pasos[0].n) * 100)}%</span>}
+                          {i > 0 && pasos[0].n > 0 && <span className="ml-1 text-slate-400">({Math.round((p.n / pasos[0].n) * 100)} %)</span>}
                         </span>
                       </li>
                     ))}
