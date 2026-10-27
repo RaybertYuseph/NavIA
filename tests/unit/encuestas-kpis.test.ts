@@ -73,6 +73,11 @@ describe('tablero de encuestas', () => {
     ]);
   });
 
+  it('junta las otras formas de cobro que escriben los conductores', () => {
+    const s = summarize([row('conductor-fiscal', { rol: 'Conductor', reparto: 'Otra: cuota fija semanal' }), row('conductor-fiscal', { rol: 'Conductor', reparto: '50/50 con el estudiante (mitad y mitad)' })]);
+    expect(s.alternativas.map((a) => a.texto)).toEqual(['cuota fija semanal']);
+  });
+
   it('el CSV escapa comillas y lleva el correo', () => {
     const csv = toCsv([row('estudiante', { falta: 'que diga "ya llegó"' }, 'r@n.co')]);
     expect(csv.split('\n')[1]).toContain('"que diga ""ya llegó"""');
