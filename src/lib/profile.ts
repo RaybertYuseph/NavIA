@@ -7,7 +7,7 @@ export const HOME_BY_ROLE: Record<Role, string> = {
   student: '/',
   driver: '/conductor',
   coordinator: '/panel',
-  admin: '/panel',
+  admin: '/encuestas',
 };
 
 /** Perfil de quien está conectado; si su rol no puede ver esta zona, lo lleva a la suya. */
