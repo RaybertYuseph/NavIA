@@ -265,8 +265,11 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                     autoComplete="email"
                   />
                   <label className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2.5 text-sm font-semibold ring-1 ring-slate-200">
-                    <input type="checkbox" checked={pilot} onChange={(e) => setPilot(e.target.checked)} className="mt-0.5 h-4 w-4 accent-brand-500" />
-                    {q.pilot}
+                    <input type="checkbox" checked={pilot} onChange={(e) => setPilot(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-brand-500" />
+                    <span>
+                      {q.pilot}
+                      <span className="mt-1 block text-xs font-normal text-slate-500">{q.pilotHint}</span>
+                    </span>
                   </label>
                   <button type="submit" disabled={state === 'sending' || !contact.trim()} className="btn-primary disabled:opacity-50">
                     {state === 'sending' ? 'Enviando…' : 'Enviar'}

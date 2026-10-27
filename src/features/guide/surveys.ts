@@ -28,7 +28,7 @@ export type Question = (
   | { id: string; kind: 'open'; text: string; placeholder: string }
   /** Montos en Bs (cada uno con su % del pasaje), «nada» (`none`, se guarda «0») y uno libre; se guarda el monto en Bs. */
   | { id: string; kind: 'price'; text: string; amounts: number[]; none: string }
-  | { id: string; kind: 'contact'; text: string; pilot: string }
+  | { id: string; kind: 'contact'; text: string; pilot: string; pilotHint: string }
 ) &
   ShowIf;
 
@@ -65,7 +65,7 @@ export const SURVEYS: Record<Audience, Question[]> = {
     { id: 'precio', kind: 'price', amounts: PRICE_PERCENTS.map((p) => priceFor(p)), none: 'No pagaría nada adicional', text: 'Respuesta honesta: tomando en cuenta estos beneficios, ¿qué porcentaje adicional sobre tu pasaje estarías dispuesto a pagar?' },
     { id: 'favorita', kind: 'choice', text: '¿Qué te sirvió más?', options: ['Ver la camioneta en el mapa', 'El aviso cuando llega', '«Estoy aquí» en mi parada', 'Preguntarle a NavIA'] },
     { id: 'falta', kind: 'open', showIf: NO_ADOPTA, text: '¿Qué le faltaría a NavIA para que la usaras en cada viaje?', placeholder: 'Ej.: que funcione sin datos, que avise antes, que sea gratis…' },
-    { id: 'piloto', kind: 'contact', text: 'Para terminar, déjanos tu correo.', pilot: 'Quiero entrar al piloto cuando NavIA llegue a mi ruta' },
+    { id: 'piloto', kind: 'contact', text: 'Para terminar, déjanos tu correo.', pilot: 'Quiero estar entre los primeros en usar NavIA en mi ruta (prueba piloto)', pilotHint: 'La prueba piloto es la primera vez que NavIA funciona con camionetas reales de tu ruta, durante unas semanas y con un grupo pequeño de estudiantes. Te escribimos cuando arranque y puedes salirte cuando quieras, sin compromiso.' },
   ],
   'conductor-fiscal': [
     { id: 'ruta', kind: 'choice', text: '¿En qué ruta trabajas?', options: RUTAS, other: 'Otra', hint: 'Escribe tu ruta' },
@@ -76,7 +76,7 @@ export const SURVEYS: Record<Audience, Question[]> = {
     { id: 'precio', kind: 'price', amounts: DRIVER_AMOUNTS, none: 'NavIA no debería cobrar comisión', text: 'Respuesta honesta: viendo lo que integraría la app, ¿qué porcentaje de cada pasaje consideras adecuado como comisión para NavIA?' },
     { id: 'reparto', kind: 'choice', text: 'Sea cual sea el monto, ¿quién debería pagar la comisión de NavIA por cada pasaje?', options: ['La absorbo yo (sale de mi pasaje)', '50/50 con el estudiante (mitad y mitad)', 'Que la pague completa el estudiante'], other: 'Otra alternativa', hint: 'Cuéntanos cómo preferirías que se cobre' },
     { id: 'falta', kind: 'open', showIf: NO_ADOPTA, text: '¿Qué le faltaría a NavIA para que la usaras en tu línea?', placeholder: 'Ej.: que gaste menos datos, que la apruebe la asociación, sin comisión…' },
-    { id: 'piloto', kind: 'contact', text: 'Para terminar, déjanos tu correo.', pilot: 'Quiero que mi unidad o mi línea esté en el piloto' },
+    { id: 'piloto', kind: 'contact', text: 'Para terminar, déjanos tu correo.', pilot: 'Quiero que mi unidad o mi línea esté entre las primeras en usar NavIA (prueba piloto)', pilotHint: 'La prueba piloto es usar NavIA en salidas reales de tu línea durante unas semanas, con el equipo acompañando, antes de abrirla a todos. Solo arranca si la asociación lo aprueba, y puedes salirte cuando quieras.' },
   ],
 };
 

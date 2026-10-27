@@ -56,7 +56,9 @@ function Answers({ q }: { q: Question }) {
       return (
         <ul className="flex flex-col gap-1.5">
           <li className={opt}>Correo (obligatorio)</li>
-          <li className={opt}>Casilla: «{q.pilot}»</li>
+          <li className={opt}>
+            Casilla: «{q.pilot}»<span className="mt-0.5 block text-xs text-slate-500">{q.pilotHint}</span>
+          </li>
         </ul>
       );
   }
