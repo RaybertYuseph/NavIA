@@ -14,7 +14,7 @@ const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
  * botón visible "Inicio demo" para volver a elegir rol sin abrir el menú.
  */
 export function TopBar({ name, role, wide, admin = false }: { name: string; role: string; wide: boolean; admin?: boolean }) {
-  const { startTour, openSurvey } = useGuide();
+  const { startTour, openSurvey, openVideo } = useGuide();
   const { leaving, leave } = useLeave(DEMO ? 'local' : 'global');
   const [open, setOpen] = useState(false);
   // Encuesta solo para quien entró por un enlace de demo (se lee después de montar: vive en el navegador).
@@ -78,6 +78,19 @@ export function TopBar({ name, role, wide, admin = false }: { name: string; role
               >
                 <Icon name="sparkle" className="h-5 w-5 text-brand-500" /> Ver el recorrido de NavIA
               </button>
+              {openVideo && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    openVideo();
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50"
+                >
+                  <Icon name="play" className="h-5 w-5 text-brand-500" /> Ver el video de NavIA
+                </button>
+              )}
               {admin && (
                 <Link href="/encuestas" role="menuitem" onClick={() => setOpen(false)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
                   <Icon name="grid" className="h-5 w-5 text-brand-500" /> Tablero de encuestas
