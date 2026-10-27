@@ -26,7 +26,7 @@ export function AppShell({
   const firstName = profile.full_name.trim().split(/\s+/)[0] ?? '';
   return (
     <GuideProvider view={VIEW_BY_ROLE[profile.role]} userId={profile.id} firstName={firstName}>
-      <TopBar name={profile.full_name} role={ROLE_LABEL[profile.role]} wide={wide} />
+      <TopBar name={profile.full_name} role={ROLE_LABEL[profile.role]} wide={wide} admin={profile.role === 'admin'} />
       <main className={`mx-auto w-full px-4 pt-4 pb-32 md:pb-12 ${wide ? 'max-w-5xl' : 'max-w-md'}`}>
         {DEMO && <DemoProgress />}
         {children}

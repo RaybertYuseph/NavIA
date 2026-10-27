@@ -96,6 +96,9 @@ export function Dashboard({ rows, error, name }: { rows: Encuesta[]; error: stri
           <NaviaLogo size={34} />
           <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 ring-1 ring-brand-100">Encuestas</span>
           <span className="ml-auto hidden text-sm text-slate-500 sm:inline">{name}</span>
+          <Link href="/panel" className="text-sm font-semibold text-brand-700">
+            Panel del fiscal
+          </Link>
           <LeaveButton />
         </div>
       </header>

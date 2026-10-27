@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { NaviaLogo } from '@/features/brand/NaviaAgent';
 import { readAudience } from '@/features/auth/demoAccess';
 import { useLeave } from '@/features/auth/useLeave';
@@ -12,7 +13,7 @@ const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
  * Barra superior fija: logo, rol y un menú con el tour y la salida. En la demo, además, un
  * botón visible "Inicio demo" para volver a elegir rol sin abrir el menú.
  */
-export function TopBar({ name, role, wide }: { name: string; role: string; wide: boolean }) {
+export function TopBar({ name, role, wide, admin = false }: { name: string; role: string; wide: boolean; admin?: boolean }) {
   const { startTour, openSurvey } = useGuide();
   const { leaving, leave } = useLeave(DEMO ? 'local' : 'global');
   const [open, setOpen] = useState(false);
@@ -77,6 +78,11 @@ export function TopBar({ name, role, wide }: { name: string; role: string; wide:
               >
                 <Icon name="sparkle" className="h-5 w-5 text-brand-500" /> Ver el recorrido de NavIA
               </button>
+              {admin && (
+                <Link href="/encuestas" role="menuitem" onClick={() => setOpen(false)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50">
+                  <Icon name="grid" className="h-5 w-5 text-brand-500" /> Tablero de encuestas
+                </Link>
+              )}
               {survey && (
                 <button
                   type="button"
