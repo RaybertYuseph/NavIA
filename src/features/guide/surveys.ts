@@ -34,7 +34,10 @@ export type Question = (
 
 /** Pasaje actual de la ruta Guarenas/Guatire → USM (Bs). */
 export const PASAJE = 1180;
-export const PRICE_PERCENTS = [2.5, 3.5, 5.5, 7.5];
+/** Comisión decidida por lado; el KPI C mide cuántos aceptan pagar al menos esto. */
+export const COMISION_LADO = 2.5;
+/** Montos que ve el estudiante, en % del pasaje (sin el 2,5 %: el KPI cuenta igual las respuestas libres). */
+export const PRICE_PERCENTS = [3.5, 5.5, 7.5, 10];
 /**
  * Conductor: montos más altos que los del estudiante, de mayor a menor, porque con el 50/50
  * (pregunta siguiente) solo aporta la mitad de lo que elija.

@@ -1,4 +1,4 @@
-import { DRIVER_AMOUNTS, OTRA, PRICE_PERCENTS, SEGMENTO, fmtBs, fmtPct, pctOf, priceFor } from '@/features/guide/surveys';
+import { COMISION_LADO, DRIVER_AMOUNTS, OTRA, PRICE_PERCENTS, SEGMENTO, fmtBs, fmtPct, pctOf, priceFor } from '@/features/guide/surveys';
 
 /**
  * Tablero de la prueba de 7 días (/encuestas): convierte las filas de la tabla encuestas en las
@@ -124,7 +124,7 @@ export function summarize(all: Encuesta[]) {
     },
   ];
 
-  const minimo = PRICE_PERCENTS[0];
+  const minimo = COMISION_LADO;
   const conPrecio = est.filter((r) => precio(r) !== null);
   const paga = (r: Encuesta) => pctOf(precio(r)!) >= minimo - 0.05;
   const estPaga = share(conPrecio, paga);
