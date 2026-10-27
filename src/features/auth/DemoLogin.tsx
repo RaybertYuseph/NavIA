@@ -1,8 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/icons';
+import { askResumeSurvey, pendingSurvey } from '@/features/guide/demoProgress';
 import { forgetDemoTour } from '@/features/guide/demoSim';
+import { SURVEYS, visibleQuestions } from '@/features/guide/surveys';
 import { AUDIENCES, DEMO_ROLES, demoSignIn, rememberAudience, type Audience } from './demoAccess';
 import { FormError } from './FormError';
 
@@ -16,8 +18,16 @@ export function DemoLogin({ audience = null }: { audience?: Audience | null }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const roles = (audience ? AUDIENCES[audience].views : (['student', 'driver', 'fiscal'] as const)).map((v) => DEMO_ROLES[v]);
+  // Encuesta empezada en este navegador y sin enviar: se ofrece continuarla (se lee tras montar).
+  const [pending, setPending] = useState<{ answered: number; total: number } | null>(null);
+  useEffect(() => {
+    const p = audience ? pendingSurvey(audience) : null;
+    if (!audience || !p) return;
+    const shown = visibleQuestions(SURVEYS[audience], p.answers);
+    setPending({ answered: shown.filter((q) => q.kind !== 'contact' && p.answers[q.id]).length, total: shown.length });
+  }, [audience]);
 
-  async function enter(email: string) {
+  async function enter(email: string, resume = false) {
     setBusy(email);
     setError(null);
     const message = await demoSignIn(email);
@@ -28,6 +38,7 @@ export function DemoLogin({ audience = null }: { audience?: Audience | null }) {
       return setError(`No se pudo entrar a la demo: ${message}`);
     }
     rememberAudience(audience);
+    if (resume) askResumeSurvey();
     // Cada entrada a un rol de la demo vuelve a ofrecer el tour (no al recargar dentro del rol).
     forgetDemoTour();
     router.replace('/');
@@ -36,6 +47,20 @@ export function DemoLogin({ audience = null }: { audience?: Audience | null }) {
 
   return (
     <section aria-labelledby="demo" className="flex flex-col gap-2.5">
+      {pending && (
+        <div className="card mb-2 rounded-3xl p-3.5 ring-2 ring-brand-300">
+          <p className="text-xs font-bold tracking-wide text-brand-600 uppercase">Tu encuesta quedó a medias</p>
+          <p className="mt-1 text-sm text-slate-600">
+            Respondiste {pending.answered} de {pending.total} preguntas. Sigue donde quedaste.
+          </p>
+          <div className="mt-2 h-2 rounded-full bg-slate-100">
+            <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.round((pending.answered / pending.total) * 100)}%` }} />
+          </div>
+          <button type="button" disabled={busy !== null} onClick={() => enter(roles[0].email, true)} className="btn-primary mt-3 w-full disabled:opacity-60">
+            {busy === roles[0].email ? 'Entrando…' : 'Continuar encuesta'}
+          </button>
+        </div>
+      )}
       <h2 id="demo" className="text-center text-xs font-bold tracking-wider text-slate-500 uppercase">Prueba la demo · entra como</h2>
       {roles.map((r) => (
         <button

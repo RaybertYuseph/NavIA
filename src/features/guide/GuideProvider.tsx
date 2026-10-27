@@ -1,6 +1,7 @@
 'use client';
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { readAudience } from '@/features/auth/demoAccess';
+import { takeResumeSurvey } from './demoProgress';
 import { DEMO, DemoTicker } from './demoSim';
 import { DemoSurvey } from './DemoSurvey';
 import { NaviaTour } from './NaviaTour';
@@ -34,6 +35,10 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
   const [touring, setTouring] = useState(false);
   const [survey, setSurvey] = useState(false);
   const openSurvey = useCallback(() => setSurvey(true), []);
+  // Quien entró con «Continuar encuesta» la ve de inmediato, sin el tour encima.
+  useEffect(() => {
+    if (DEMO && takeResumeSurvey()) setSurvey(true);
+  }, []);
 
   const setTab = useCallback((next: string) => {
     setTabState(next);
@@ -55,6 +60,7 @@ export function GuideProvider({ view, userId, firstName, children }: { view: Vie
         onTouring={setTouring}
         onClose={() => setTour(null)}
         onSurvey={openSurvey}
+        hold={survey}
       />
       {survey && <SurveyModal view={view} onClose={() => setSurvey(false)} />}
     </GuideContext.Provider>
