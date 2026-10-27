@@ -8,7 +8,7 @@ import type { Audience } from '@/features/auth/demoAccess';
  *
  * Qué KPI mide cada una (fichas «Prueba NavIA 7 días», tablero en /encuestas):
  * - Principal, intención de adopción: `usaria` (≥60% «Sí, seguro» o «Probablemente») y `piloto` (≥40% «Sí»).
- * - A, valor percibido (estudiantes): `util` (≥4/5), `decepcion` (≥40% «Muy») y `whatsapp` (≥60% «Sí»).
+ * - A, valor percibido (estudiantes): `util` (≥4/5), `facil` (≥4/5) y `whatsapp` (≥60% «Sí»).
  * - B, conductores y asociación: `usaria` del enlace conductor-fiscal (≥3 de 5 conductores).
  * - C, precio: `precio` en los dos enlaces (≥50% acepta al menos el 2,5% del pasaje) y `reparto`
  *   (≥3 de 5 conductores aceptan 50/50).
@@ -42,7 +42,7 @@ export const SURVEYS: Record<Audience, Question[]> = {
   estudiante: [
     { id: 'usaria', kind: 'choice', text: 'Si NavIA estuviera en tu ruta, ¿la usarías en cada viaje?', options: ['Sí, seguro', 'Probablemente', 'No sé', 'No'] },
     { id: 'util', kind: 'scale', text: '¿Qué tan útil te pareció lo que viste?', low: 'Nada útil', high: 'Muy útil' },
-    { id: 'decepcion', kind: 'choice', text: '¿Qué tan decepcionado estarías si NavIA no existiera?', options: ['Muy decepcionado', 'Algo decepcionado', 'Nada decepcionado'] },
+    { id: 'facil', kind: 'scale', text: '¿Qué tan fácil te pareció usar NavIA?', low: 'Muy difícil', high: 'Muy fácil' },
     { id: 'whatsapp', kind: 'choice', text: 'Con NavIA, ¿dejarías de preguntar en el grupo de WhatsApp dónde viene la camioneta?', options: ['Sí', 'A veces', 'No'] },
     { id: 'precio', kind: 'price', percents: PRICE_PERCENTS, text: 'Respuesta honesta: tomando en cuenta estos beneficios, ¿cuál sería el valor adicional sumado al pasaje que estarías dispuesto a pagar?' },
     { id: 'favorita', kind: 'choice', text: '¿Qué te sirvió más?', options: ['Ver la camioneta en el mapa', 'El aviso cuando llega', '«Estoy aquí» en mi parada', 'Preguntarle a NavIA'] },

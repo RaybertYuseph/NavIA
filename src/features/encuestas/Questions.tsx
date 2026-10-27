@@ -3,7 +3,7 @@ import { PASAJE, SURVEYS, fmtBs, fmtPct, priceFor, type Question } from '@/featu
 
 /** Qué ficha mide cada pregunta (ver surveys.ts); sin entrada, es de diagnóstico. */
 const KPI: Record<Audience, Record<string, string>> = {
-  estudiante: { usaria: 'KPI principal', piloto: 'KPI principal', util: 'Apoyo A', decepcion: 'Apoyo A', whatsapp: 'Apoyo A', precio: 'Apoyo C' },
+  estudiante: { usaria: 'KPI principal', piloto: 'KPI principal', util: 'Apoyo A', facil: 'Apoyo A', whatsapp: 'Apoyo A', precio: 'Apoyo C' },
   'conductor-fiscal': { usaria: 'Apoyo B', precio: 'Apoyo C', reparto: 'Apoyo C' },
 };
 

@@ -31,6 +31,14 @@ describe('tablero de encuestas', () => {
     expect(summarize(malo).principal[0].status).toBe('refuta');
   });
 
+  it('KPI A promedia utilidad y facilidad de 1 a 5', () => {
+    const est = Array.from({ length: 10 }, (_, n) => row('estudiante', { util: '4', facil: n < 5 ? '5' : '3' }));
+    const [util, facil] = summarize(est).apoyoA;
+    expect(util.display).toBe('4 / 5');
+    expect(facil.display).toBe('4 / 5');
+    expect(facil.status).toBe('confirma');
+  });
+
   it('las respuestas viejas con contacto y sin «piloto» cuentan como anotadas', () => {
     const est = Array.from({ length: 10 }, (_, n) => row('estudiante', { usaria: 'Probablemente' }, n < 5 ? 'x@y.co' : null));
     expect(summarize(est).principal[1].display).toBe('50 %');

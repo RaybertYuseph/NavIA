@@ -67,13 +67,17 @@ export function summarize(rows: Encuesta[]) {
     { label: 'Se anota al piloto', value: piloto, display: pct(piloto), target: 40, refute: 20, unit: '%', status: status(piloto, 40, 20, enough) },
   ];
 
-  const utiles = est.map((r) => Number(r.respuestas.util)).filter((n) => n >= 1 && n <= 5);
-  const util = utiles.length ? utiles.reduce((a, b) => a + b, 0) / utiles.length : 0;
-  const muy = share(est, (r) => r.respuestas.decepcion === 'Muy decepcionado');
+  const nota = (id: string) => {
+    const ns = est.map((r) => Number(r.respuestas[id])).filter((n) => n >= 1 && n <= 5);
+    return { n: ns.length, avg: ns.length ? ns.reduce((a, b) => a + b, 0) / ns.length : 0 };
+  };
+  const shown = (x: { n: number; avg: number }) => (x.n ? `${x.avg.toLocaleString('es-VE', { maximumFractionDigits: 1 })} / 5` : '–');
+  const util = nota('util');
+  const facil = nota('facil');
   const wa = share(est, (r) => r.respuestas.whatsapp === 'Sí');
   const apoyoA: Meter[] = [
-    { label: 'Utilidad promedio', value: util, display: utiles.length ? `${util.toLocaleString('es-VE', { maximumFractionDigits: 1 })} / 5` : '–', target: 4, refute: 3.5, unit: '/5', status: status(util, 4, 3.5, enough) },
-    { label: 'Muy decepcionado sin NavIA', value: muy, display: pct(muy), target: 40, refute: 25, unit: '%', status: status(muy, 40, 25, enough) },
+    { label: 'Utilidad promedio', value: util.avg, display: shown(util), target: 4, refute: 3.5, unit: '/5', status: status(util.avg, 4, 3.5, enough) },
+    { label: 'Facilidad de uso promedio', value: facil.avg, display: shown(facil), target: 4, refute: 3.5, unit: '/5', status: status(facil.avg, 4, 3.5, facil.n >= MIN_ESTUDIANTES) },
     { label: 'Dejaría de preguntar en WhatsApp', value: wa, display: pct(wa), target: 60, refute: 40, unit: '%', status: status(wa, 60, 40, enough) },
   ];
 
