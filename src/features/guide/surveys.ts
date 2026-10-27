@@ -33,7 +33,7 @@ export const PASAJE = 1180;
 export const PRICE_PERCENTS = [2.5, 3.5, 5.5, 7.5];
 export const priceFor = (pct: number) => Math.round(PASAJE * pct) / 100;
 export const pctOf = (bs: number) => (bs / PASAJE) * 100;
-export const fmtBs = (n: number) => `${n.toLocaleString('es-VE', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} Bs`;
+export const fmtBs = (n: number) => `${n.toLocaleString('es-VE', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}\u00a0Bs`;
 export const fmtPct = (n: number) => `${n.toLocaleString('es-VE', { maximumFractionDigits: 1 })} %`;
 
 const NO_ADOPTA = { id: 'usaria', in: ['No sé', 'No'] };

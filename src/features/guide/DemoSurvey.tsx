@@ -189,10 +189,10 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                       OK
                     </button>
                   </form>
-                  <p className="text-xs text-slate-500">
-                    {Number.isFinite(customBs)
-                      ? `${fmtBs(customBs)} es el ${fmtPct(pctOf(customBs))} del pasaje actual (${fmtBs(PASAJE)}).`
-                      : `El porcentaje es sobre el pasaje actual de ${fmtBs(PASAJE)}.`}
+                  <p className="rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-800">
+                    {Number.isFinite(customBs) && <b className="block">{`${fmtBs(customBs)} es el ${fmtPct(pctOf(customBs))} del pasaje actual.`}</b>}
+                    Los montos son sobre el pasaje actual de {fmtBs(PASAJE)}. El valor queda anclado como porcentaje del pasaje: si el pasaje sube o baja, el monto se ajusta en la
+                    misma proporción.
                   </p>
                 </>
               )}
