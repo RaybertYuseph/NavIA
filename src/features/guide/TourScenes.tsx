@@ -577,11 +577,11 @@ function DriverQr() {
           >
             {result === 'ok' ? (
               <>
-                <b className="block text-sm">✓ Pasaje cobrado · 1.180 Bs</b>Andrea M. · paquete semanal, le quedan 7 pasajes
+                <b className="block text-sm">✓ Pasaje cobrado · 1.180 Bs</b>Andrea M. · el pago llegó a la cuenta de la asociación
               </>
             ) : (
               <>
-                <b className="block text-sm">✗ Este QR ya se usó hoy a las 6:32</b>No cobres dos veces: pídele su propio QR o pago móvil.
+                <b className="block text-sm">✗ Este QR ya se usó hoy a las 6:32</b>No es un pago nuevo: pídele que pague su pasaje desde la app.
               </>
             )}
           </span>
@@ -591,7 +591,7 @@ function DriverQr() {
   );
 }
 
-/** Release 2: cierre del día del conductor con pasajes, total, comisión y paso a su cuenta. */
+/** Release 2: cierre del día del conductor; todo lo cobrado ya está en la cuenta común de la asociación. */
 function DriverWallet() {
   const f = useFrames(T.wallet);
   return (
@@ -628,14 +628,14 @@ function DriverWallet() {
       )}
       {f >= 2 && (
         <span className={`tour-pop btn-primary text-sm ${tap(f === 2)}`}>
-          {f === 2 ? 'Transferir a mi cuenta' : f === 3 ? 'Enviando a tu cuenta ****4821…' : '✓ 62.127 Bs en tu cuenta'}
+          {f === 2 ? 'Ver depósitos en la asociación' : f === 3 ? 'Cuadrando con el banco aliado…' : '✓ 62.127 Bs en la cuenta de la asociación'}
         </span>
       )}
     </Phone>
   );
 }
 
-/* ───────────────────────── El pago hoy y con saldo NavIA ───────────────────────── */
+/* ───────────────────────── El pago hoy y con QR ───────────────────────── */
 
 /** Así se paga hoy: datos dictados en la puerta y la app del banco que no carga con poca señal. */
 function StudentPayPain() {
@@ -668,34 +668,37 @@ function StudentPayPain() {
   );
 }
 
-/** Release 2: el estudiante paga con su saldo NavIA mostrando el QR de la app. */
+/**
+ * Release 2: el estudiante paga su pasaje por QR desde su banco. El banco aliado deposita en la
+ * cuenta común de la asociación de conductores; NavIA no guarda saldo, solo confirma que llegó.
+ */
 function StudentWallet() {
   const f = useFrames(T.swallet);
-  const saldo = f >= 3 ? '4.690' : '5.900';
   return (
     <Phone>
       <Release2 />
-      <div className="flex items-center justify-between rounded-2xl bg-linear-to-br from-brand-400 to-indigo-500 p-3 text-white shadow-md">
-        <span>
-          <span className="block text-[11px] opacity-90">Saldo NavIA</span>
-          <b key={saldo} className="tour-pop block text-xl leading-tight">{saldo} Bs</b>
-          <span className="text-[10px] opacity-90">{f >= 3 ? 'Te alcanza para 3 pasajes' : 'Te alcanza para 4 pasajes'}</span>
-        </span>
-        <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold">+ Recargar</span>
+      <div className={`rounded-2xl bg-white text-xs ring-1 ring-slate-200 ${f >= 3 ? 'hidden' : 'p-3'}`}>
+        <span className="block text-[11px] text-slate-500">Pasaje · Guatire → USM · 6:30</span>
+        <b className="block text-xl leading-tight">1.210 Bs</b>
+        <span className="text-[10px] text-slate-500">1.180 Bs del pasaje + 30 Bs de servicio NavIA</span>
       </div>
-      {f === 0 && <span className="btn-primary">Pagar mi pasaje</span>}
-      {f === 1 && <span className={`btn-primary ${tap(true)}`}>Pagar mi pasaje</span>}
-      {f >= 2 && f < 3 && (
-        <div className="tour-pop flex flex-1 flex-col items-center justify-center gap-1">
-          <FakeQr seed={3} big />
-          <span className="text-xs font-semibold text-slate-600">Muéstraselo al conductor · sirve sin señal</span>
+      {f <= 1 && <span className={`btn-primary ${tap(f === 1)}`}>Pagar mi pasaje</span>}
+      {f === 2 && (
+        <div className="tour-pop flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl bg-white p-3 text-center ring-1 ring-slate-200">
+          <b className="text-sm">Pagando desde tu banco…</b>
+          <span className="text-[11px] text-slate-600">Va directo a la cuenta de la Asociación de conductores Guatire–USM</span>
+          <span className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+            <span className="block h-full w-2/3 animate-pulse rounded-full bg-brand-400" />
+          </span>
         </div>
       )}
       {f >= 3 && (
         <div className="tour-pop flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl bg-emerald-50 p-3 text-center ring-1 ring-emerald-200">
-          <b className="text-lg text-emerald-800">✓ Pasaje pagado</b>
-          <span className="text-xs text-emerald-900">1.210 Bs · AB123CD · 6:31 · en 3 segundos</span>
-          {f >= 4 && <span className="tour-pop mt-1 text-[11px] text-slate-600">Recargas en casa, con buena señal, y en la puerta solo muestras el QR.</span>}
+          <b className="text-sm text-emerald-800">✓ Pago confirmado · 1.210 Bs</b>
+          <span className="text-[11px] text-emerald-900">Llegó a la cuenta de la asociación</span>
+          <FakeQr seed={3} />
+          <span className="text-[11px] font-semibold text-slate-600">Muéstraselo al conductor · sirve sin señal</span>
+          {f >= 4 && <span className="tour-pop mt-1 text-[11px] text-slate-600">NavIA no guarda tu dinero: solo confirma que el pago llegó.</span>}
         </div>
       )}
     </Phone>

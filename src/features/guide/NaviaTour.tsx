@@ -10,8 +10,8 @@ import { startDemoSimulation } from './demoSim';
 import { DEFAULT_TAB, TOURS, type View } from './tours';
 import { useTypewriter } from './useTypewriter';
 
-// v5: los tours suman cómo se paga hoy y el pago con saldo NavIA; quien vio el anterior lo ve de nuevo.
-const seenKey = (userId: string) => `navia:tour:v5:${userId}`;
+// v6: el pago es por QR a la cuenta de la asociación, sin saldo NavIA; quien vio el anterior lo ve de nuevo.
+const seenKey = (userId: string) => `navia:tour:v6:${userId}`;
 // En la demo se recuerda solo mientras el navegador esté abierto: cada presentación empieza con el tour.
 const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
 const seenStore = () => (DEMO ? sessionStorage : localStorage);
