@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { Audience } from '@/features/auth/demoAccess';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { readSurvey, saveSurvey } from './demoProgress';
-import { CORREO_MAX, FALTA_MAX, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, priceFor, visibleQuestions } from './surveys';
+import { CORREO_MAX, FALTA_MAX, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, visibleQuestions } from './surveys';
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 import type { View } from './tours';
@@ -158,12 +158,11 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
               )}
               {q.kind === 'price' && (
                 <>
-                  {q.percents.map((pct) => {
-                    const bs = priceFor(pct);
+                  {q.amounts.map((bs) => {
                     const on = answers[q.id] === String(bs) && !custom;
                     return (
                       <button
-                        key={pct}
+                        key={bs}
                         type="button"
                         onClick={() => {
                           setCustom('');
@@ -174,7 +173,7 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                         }`}
                       >
                         <span className="text-base font-extrabold">{fmtBs(bs)}</span>
-                        <span className="text-xs font-semibold text-slate-500">{fmtPct(pct)} del pasaje</span>
+                        <span className="text-xs font-semibold text-slate-500">{fmtPct(pctOf(bs))} del pasaje</span>
                       </button>
                     );
                   })}

@@ -72,7 +72,7 @@ function Prices({ title, data }: { title: string; data: ReturnType<typeof summar
       <p className="text-xs text-slate-500">Mediana: {data.medianPct === null ? '–' : `${fmtPct(data.medianPct)} del pasaje`}</p>
       <ul className="mt-2 flex flex-col gap-1.5">
         {data.buckets.map((b) => (
-          <li key={b.label} className="grid grid-cols-[6.5rem_1fr_2rem] items-center gap-2 text-xs">
+          <li key={b.label} className="grid grid-cols-[8.5rem_1fr_2rem] items-center gap-2 text-xs">
             <span className="text-slate-600">{b.label}</span>
             <span className="h-3 rounded-full bg-slate-100">
               <span className="block h-full rounded-full bg-brand-500" style={{ width: `${(b.n / max) * 100}%` }} />

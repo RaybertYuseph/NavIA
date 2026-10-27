@@ -1,4 +1,4 @@
-import { PRICE_PERCENTS, pctOf } from '@/features/guide/surveys';
+import { DRIVER_AMOUNTS, PRICE_PERCENTS, fmtBs, fmtPct, pctOf, priceFor } from '@/features/guide/surveys';
 
 /**
  * Tablero de la prueba de 7 días (/encuestas): convierte las filas de la tabla encuestas en las
@@ -38,20 +38,20 @@ const precio = (r: Encuesta) => {
   return r.respuestas.precio !== undefined && Number.isFinite(v) ? v : null;
 };
 
-/** Reparto de respuestas de precio por tramo: las 4 opciones (2,5 %, 3,5 %…) y «menos» / «más». */
-export function priceBuckets(rows: Encuesta[]) {
-  const values = rows.map(precio).filter((v): v is number => v !== null).map(pctOf);
-  const edges = PRICE_PERCENTS;
-  const near = (v: number, p: number) => Math.abs(v - p) < 0.05;
+/** Reparto de respuestas de precio: una fila por opción en Bs (de menor a mayor), «menos» y «otro valor». */
+export function priceBuckets(rows: Encuesta[], amounts: number[]) {
+  const bs = rows.map(precio).filter((v): v is number => v !== null);
+  const edges = [...amounts].sort((a, b) => a - b);
+  const near = (v: number, a: number) => Math.abs(v - a) < 0.01;
   const buckets = [
-    { label: `Menos de ${edges[0].toLocaleString('es-VE')} %`, n: values.filter((v) => v < edges[0] - 0.05).length },
-    ...edges.map((p) => ({ label: `${p.toLocaleString('es-VE')} %`, n: values.filter((v) => near(v, p)).length })),
-    { label: 'Otro valor', n: values.filter((v) => v >= edges[0] - 0.05 && !edges.some((p) => near(v, p))).length },
+    { label: `Menos de ${fmtBs(edges[0])}`, n: bs.filter((v) => v < edges[0] - 0.01).length },
+    ...edges.map((a) => ({ label: `${fmtBs(a)} · ${fmtPct(pctOf(a))}`, n: bs.filter((v) => near(v, a)).length })),
+    { label: 'Otro valor', n: bs.filter((v) => v >= edges[0] - 0.01 && !edges.some((a) => near(v, a))).length },
   ];
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = bs.map(pctOf).sort((a, b) => a - b);
   const mid = sorted.length >> 1;
   const median = sorted.length ? (sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2) : null;
-  return { buckets, total: values.length, medianPct: median };
+  return { buckets, total: bs.length, medianPct: median };
 }
 
 export function summarize(rows: Encuesta[]) {
@@ -124,8 +124,8 @@ export function summarize(rows: Encuesta[]) {
     apoyoA,
     apoyoB,
     apoyoC,
-    precioEstudiantes: priceBuckets(est),
-    precioConductores: priceBuckets(cond),
+    precioEstudiantes: priceBuckets(est, PRICE_PERCENTS.map((p) => priceFor(p))),
+    precioConductores: priceBuckets(cond, DRIVER_AMOUNTS),
     porDia: [...porDia.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([dia, n]) => ({ dia, ...n })),
     faltas: rows.filter((r) => r.respuestas.falta).map((r) => ({ id: r.id, audiencia: r.audiencia, texto: r.respuestas.falta, fecha: r.created_at })),
   };
