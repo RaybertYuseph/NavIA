@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import type { Audience } from '@/features/auth/demoAccess';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { readSurvey, saveSurvey } from './demoProgress';
+import { readCanal, trackDemo } from './demoTrack';
 import { CORREO_MAX, FALTA_MAX, OTRA, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, visibleQuestions } from './surveys';
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 import type { View } from './tours';
 
 /**
- * Encuesta de 7 preguntas al final del tour de un enlace de demo, una pregunta por pantalla.
+ * Encuesta de 8 preguntas al final del tour de un enlace de demo, una pregunta por pantalla.
  * Tocar una opción pasa a la siguiente; la abierta es opcional y el correo del final, obligatorio.
  * Quien no la usaría ve además «¿Qué le faltaría?» (ver surveys.ts).
  */
@@ -19,7 +20,12 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
     const p = readSurvey(audience);
     return p && !p.sent ? p : null;
   });
-  const [i, setI] = useState(saved?.i ?? 0);
+  // Retoma en la primera pregunta sin responder si es anterior a donde quedó (p. ej. una pregunta nueva).
+  const [i, setI] = useState(() => {
+    if (!saved) return 0;
+    const pending = visibleQuestions(SURVEYS[audience], saved.answers).findIndex((x) => x.kind !== 'contact' && x.kind !== 'open' && !saved.answers[x.id]);
+    return pending >= 0 ? Math.min(saved.i, pending) : saved.i;
+  });
   const [answers, setAnswers] = useState<Record<string, string>>(saved?.answers ?? {});
   const questions = visibleQuestions(SURVEYS[audience], answers);
   const [contact, setContact] = useState(saved?.contact ?? '');
@@ -47,7 +53,8 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
   /** Solo lo que se ve: si alguien vuelve y cambia «No» por «Sí», su «¿qué le faltaría?» no se envía. */
   function shownAnswers() {
     const shown = Object.fromEntries(questions.map((x) => [x.id, answers[x.id]?.trim()]).filter(([, v]) => v));
-    return { ...shown, piloto: pilot ? 'Sí' : 'No' };
+    const canal = readCanal();
+    return { ...shown, piloto: pilot ? 'Sí' : 'No', ...(canal ? { canal } : {}) };
   }
 
   async function send() {
@@ -65,6 +72,7 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
       });
       if (!r.ok) throw new Error(((await r.json().catch(() => null)) as { error?: string } | null)?.error ?? `Error ${r.status}`);
       setState('sent');
+      trackDemo('encuesta');
     } catch (e) {
       setState('idle');
       setError(navigator.onLine ? `No se pudo enviar: ${e instanceof Error ? e.message : e}` : 'Sin conexión. Intenta de nuevo cuando vuelva la señal.');
@@ -122,6 +130,7 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
               {q.kind === 'choice' && q.other && (
                 <OtherOption
                   label={q.other}
+                  hint={q.hint ?? ''}
                   open={otherOpen || !!answers[q.id]?.startsWith(OTRA)}
                   value={answers[q.id]?.startsWith(OTRA) ? answers[q.id].slice(OTRA.length) : ''}
                   onOpen={() => setOtherOpen(true)}
@@ -191,6 +200,18 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                       </button>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustom('');
+                      pick('0');
+                    }}
+                    className={`rounded-2xl px-3 py-2.5 text-left text-sm font-semibold transition active:scale-[0.98] ${
+                      answers[q.id] === '0' && !custom ? 'bg-brand-50 ring-2 ring-brand-400' : 'bg-slate-50 ring-1 ring-slate-200'
+                    }`}
+                  >
+                    {q.none}
+                  </button>
                   <form
                     className="flex items-center gap-2"
                     onSubmit={(e) => {
@@ -270,8 +291,8 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
 }
 
 /** Opción «Otra alternativa»: al tocarla se abre un texto libre y «Siguiente». */
-function OtherOption(props: { label: string; open: boolean; value: string; onOpen: () => void; onChange: (text: string) => void; onNext: () => void }) {
-  const { label, open, value, onOpen, onChange, onNext } = props;
+function OtherOption(props: { label: string; hint: string; open: boolean; value: string; onOpen: () => void; onChange: (text: string) => void; onNext: () => void }) {
+  const { label, hint, open, value, onOpen, onChange, onNext } = props;
   if (!open)
     return (
       <button type="button" onClick={onOpen} className="rounded-2xl bg-slate-50 px-3 py-2.5 text-left text-sm font-semibold ring-1 ring-slate-200 transition active:scale-[0.98]">
@@ -296,7 +317,7 @@ function OtherOption(props: { label: string; open: boolean; value: string; onOpe
         value={value}
         maxLength={FALTA_MAX - OTRA.length}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Cuéntanos cómo preferirías que se cobre"
+        placeholder={hint}
       />
       <button type="submit" disabled={!value.trim()} className="btn-primary disabled:opacity-50">
         Siguiente

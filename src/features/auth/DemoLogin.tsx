@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/icons';
 import { askResumeSurvey, pendingSurvey } from '@/features/guide/demoProgress';
 import { forgetDemoTour } from '@/features/guide/demoSim';
+import { rememberCanal, trackDemo } from '@/features/guide/demoTrack';
 import { SURVEYS, visibleQuestions } from '@/features/guide/surveys';
 import { AUDIENCES, DEMO_ROLES, demoSignIn, rememberAudience, type Audience } from './demoAccess';
 import { FormError } from './FormError';
@@ -20,6 +21,12 @@ export function DemoLogin({ audience = null }: { audience?: Audience | null }) {
   const roles = (audience ? AUDIENCES[audience].views : (['student', 'driver', 'fiscal'] as const)).map((v) => DEMO_ROLES[v]);
   // Encuesta empezada en este navegador y sin enviar: se ofrece continuarla (se lee tras montar).
   const [pending, setPending] = useState<{ answered: number; total: number } | null>(null);
+  useEffect(() => {
+    if (!audience) return;
+    // Embudo: quién abrió el enlace y por qué canal (?canal=whatsapp, ?canal=usm…).
+    rememberCanal(new URLSearchParams(window.location.search).get('canal'));
+    trackDemo('visita', audience);
+  }, [audience]);
   useEffect(() => {
     const p = audience ? pendingSurvey(audience) : null;
     if (!audience || !p) return;
@@ -38,6 +45,7 @@ export function DemoLogin({ audience = null }: { audience?: Audience | null }) {
       return setError(`No se pudo entrar a la demo: ${message}`);
     }
     rememberAudience(audience);
+    if (audience) trackDemo('entrada', audience);
     if (resume) askResumeSurvey();
     // Cada entrada a un rol de la demo vuelve a ofrecer el tour (no al recargar dentro del rol).
     forgetDemoTour();

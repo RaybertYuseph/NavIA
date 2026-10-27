@@ -17,7 +17,7 @@ type Guide = {
   startTour: (ask?: boolean, from?: number) => void;
   /** El tour está abierto y NavIA camina por la pantalla (el botón flotante se oculta). */
   touring: boolean;
-  /** En un enlace de demo, abre la encuesta de 7 preguntas de ese público. */
+  /** En un enlace de demo, abre la encuesta de 8 preguntas de ese público. */
   openSurvey: () => void;
   /** En el enlace de estudiantes, el video en que NavIA se presenta (null si no hay video para esta vista). */
   openVideo: (() => void) | null;

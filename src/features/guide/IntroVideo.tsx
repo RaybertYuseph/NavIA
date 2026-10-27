@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
+import { trackDemo } from './demoTrack';
 
 const SEEN_KEY = 'navia:demo:video';
 export const INTRO_VIDEO = { src: '/video/navia-estudiantes.mp4', poster: '/video/navia-estudiantes.webp' };
@@ -54,7 +55,10 @@ export function IntroVideo({ onClose, onTour }: { onClose: () => void; onTour: (
           controls
           playsInline
           preload="metadata"
-          onEnded={() => setEnded(true)}
+          onEnded={() => {
+            setEnded(true);
+            trackDemo('video');
+          }}
           className="mt-3 aspect-video w-full rounded-2xl bg-slate-100"
         />
         {ended ? (
