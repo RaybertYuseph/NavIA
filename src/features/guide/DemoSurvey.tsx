@@ -2,35 +2,53 @@
 import { useState } from 'react';
 import type { Audience } from '@/features/auth/demoAccess';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
-import { SURVEYS } from './surveys';
+import { CORREO_MAX, FALTA_MAX, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, priceFor, visibleQuestions } from './surveys';
+
+const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 import type { View } from './tours';
 
 /**
  * Encuesta de 7 preguntas al final del tour de un enlace de demo, una pregunta por pantalla.
- * Tocar una opción pasa a la siguiente; la última (contacto) es opcional.
+ * Tocar una opción pasa a la siguiente; la abierta es opcional y el correo del final, obligatorio.
+ * Quien no la usaría ve además «¿Qué le faltaría?» (ver surveys.ts).
  */
 export function DemoSurvey({ audience, view, onClose }: { audience: Audience; view: View; onClose: () => void }) {
-  const questions = SURVEYS[audience];
   const [i, setI] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const questions = visibleQuestions(SURVEYS[audience], answers);
   const [contact, setContact] = useState('');
+  const [pilot, setPilot] = useState(false);
+  const [custom, setCustom] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
   const q = questions[i];
+  const customBs = custom.trim() ? Number(custom.replace(',', '.')) : NaN;
 
   function pick(value: string) {
-    setAnswers((a) => ({ ...a, [q.id]: value }));
-    setTimeout(() => setI((n) => Math.min(n + 1, questions.length - 1)), 220);
+    const next = { ...answers, [q.id]: value };
+    setAnswers(next);
+    const last = visibleQuestions(SURVEYS[audience], next).length - 1;
+    setTimeout(() => setI((n) => Math.min(n + 1, last)), 220);
+  }
+
+  /** Solo lo que se ve: si alguien vuelve y cambia «No» por «Sí», su «¿qué le faltaría?» no se envía. */
+  function shownAnswers() {
+    const shown = Object.fromEntries(questions.map((x) => [x.id, answers[x.id]?.trim()]).filter(([, v]) => v));
+    return { ...shown, piloto: pilot ? 'Sí' : 'No' };
   }
 
   async function send() {
+    if (!CORREO.test(contact.trim())) {
+      setError('Escribe un correo válido para enviar la encuesta.');
+      return;
+    }
     setState('sending');
     setError(null);
     try {
       const r = await fetch('/api/encuesta', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ audiencia: audience, vista: view, respuestas: answers, contacto: contact.trim() || undefined }),
+        body: JSON.stringify({ audiencia: audience, vista: view, respuestas: shownAnswers(), contacto: contact.trim() }),
       });
       if (!r.ok) throw new Error(((await r.json().catch(() => null)) as { error?: string } | null)?.error ?? `Error ${r.status}`);
       setState('sent');
@@ -105,9 +123,83 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                   </span>
                 </>
               )}
+              {q.kind === 'open' && (
+                <form
+                  className="flex flex-col gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setI((n) => Math.min(n + 1, questions.length - 1));
+                  }}
+                >
+                  <textarea
+                    id="encuesta-abierta"
+                    className="field min-h-24 resize-none"
+                    value={answers[q.id] ?? ''}
+                    maxLength={FALTA_MAX}
+                    onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                    placeholder={q.placeholder}
+                  />
+                  <button type="submit" className="btn-primary">
+                    {answers[q.id]?.trim() ? 'Siguiente' : 'Saltar'}
+                  </button>
+                </form>
+              )}
+              {q.kind === 'price' && (
+                <>
+                  {q.percents.map((pct) => {
+                    const bs = priceFor(pct);
+                    const on = answers[q.id] === String(bs) && !custom;
+                    return (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => {
+                          setCustom('');
+                          pick(String(bs));
+                        }}
+                        className={`flex items-baseline justify-between rounded-2xl px-3 py-2.5 text-left transition active:scale-[0.98] ${
+                          on ? 'bg-brand-50 ring-2 ring-brand-400' : 'bg-slate-50 ring-1 ring-slate-200'
+                        }`}
+                      >
+                        <span className="text-base font-extrabold">{fmtBs(bs)}</span>
+                        <span className="text-xs font-semibold text-slate-500">{fmtPct(pct)} del pasaje</span>
+                      </button>
+                    );
+                  })}
+                  <form
+                    className="flex items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (Number.isFinite(customBs)) pick(String(customBs));
+                    }}
+                  >
+                    <label className="relative flex-1">
+                      <span className="sr-only">Otro valor en Bs</span>
+                      <input
+                        id="encuesta-precio"
+                        className="field pr-10"
+                        inputMode="decimal"
+                        value={custom}
+                        onChange={(e) => setCustom(e.target.value.replace(/[^\d.,]/g, '').slice(0, 8))}
+                        placeholder="Otro valor"
+                      />
+                      <span className="absolute top-1/2 right-3 -translate-y-1/2 text-sm font-semibold text-slate-400">Bs</span>
+                    </label>
+                    <button type="submit" disabled={!Number.isFinite(customBs)} className="btn-primary px-4 disabled:opacity-50">
+                      OK
+                    </button>
+                  </form>
+                  <p className="rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-800">
+                    {Number.isFinite(customBs) && <b className="block">{`${fmtBs(customBs)} es el ${fmtPct(pctOf(customBs))} del pasaje actual.`}</b>}
+                    Los montos son sobre el pasaje actual de {fmtBs(PASAJE)}. El valor queda anclado como porcentaje del pasaje: si el pasaje sube o baja, el monto se ajusta en la
+                    misma proporción.
+                  </p>
+                </>
+              )}
               {q.kind === 'contact' && (
                 <form
                   className="flex flex-col gap-2"
+                  noValidate
                   onSubmit={(e) => {
                     e.preventDefault();
                     void send();
@@ -115,16 +207,23 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                 >
                   <input
                     id="encuesta-contacto"
+                    type="email"
                     className="field"
                     value={contact}
-                    maxLength={200}
+                    maxLength={CORREO_MAX}
+                    required
                     onChange={(e) => setContact(e.target.value)}
-                    placeholder={q.placeholder}
-                    autoComplete="off"
+                    placeholder="tucorreo@ejemplo.com"
+                    autoComplete="email"
                   />
-                  <button type="submit" disabled={state === 'sending'} className="btn-primary">
-                    {state === 'sending' ? 'Enviando…' : contact.trim() ? 'Enviar y anotarme' : 'Enviar sin anotarme'}
+                  <label className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2.5 text-sm font-semibold ring-1 ring-slate-200">
+                    <input type="checkbox" checked={pilot} onChange={(e) => setPilot(e.target.checked)} className="mt-0.5 h-4 w-4 accent-brand-500" />
+                    {q.pilot}
+                  </label>
+                  <button type="submit" disabled={state === 'sending' || !contact.trim()} className="btn-primary disabled:opacity-50">
+                    {state === 'sending' ? 'Enviando…' : 'Enviar'}
                   </button>
+                  <p className="text-xs text-slate-500">Solo lo usamos para contactarte sobre NavIA.</p>
                   {error && (
                     <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
                       {error}
