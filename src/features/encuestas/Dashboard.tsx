@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { NaviaLogo } from '@/features/brand/NaviaAgent';
 import { fmtBs, fmtPct } from '@/features/guide/surveys';
+import { DashboardTabs } from './DashboardTabs';
 import { LeaveButton } from './LeaveButton';
 import { Questions } from './Questions';
 import { PRUEBA, summarize, toCsv, type Encuesta, type Meter, type Status } from './kpis';
@@ -84,7 +85,7 @@ function Prices({ title, data }: { title: string; data: ReturnType<typeof summar
   );
 }
 
-export function Dashboard({ rows, error, name, tab }: { rows: Encuesta[]; error: string | null; name: string; tab: 'resultados' | 'preguntas' }) {
+export function Dashboard({ rows, error, name }: { rows: Encuesta[]; error: string | null; name: string }) {
   const s = summarize(rows);
   const quedan = Math.ceil((new Date(PRUEBA.corte).getTime() - Date.now()) / 86_400_000);
   const csv = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${toCsv(rows)}`)}`;
@@ -105,28 +106,6 @@ export function Dashboard({ rows, error, name, tab }: { rows: Encuesta[]; error:
       </header>
 
       <main className="mx-auto flex max-w-5xl flex-col gap-4 px-4 pt-4 pb-16">
-        <nav aria-label="Secciones del tablero" className="inline-flex gap-1 self-start rounded-2xl bg-white/70 p-1 ring-1 ring-slate-200/70">
-          {(
-            [
-              ['resultados', 'Resultados'],
-              ['preguntas', 'Preguntas'],
-            ] as const
-          ).map(([id, label]) => (
-            <Link
-              key={id}
-              href={id === 'resultados' ? '/encuestas' : `/encuestas?tab=${id}`}
-              prefetch={false}
-              aria-current={tab === id ? 'page' : undefined}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === id ? 'bg-brand-500 text-white shadow-md shadow-brand-500/30' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-        {tab === 'preguntas' ? (
-          <Questions />
-        ) : (
-          <>
         <section className="card rounded-3xl p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -168,6 +147,9 @@ export function Dashboard({ rows, error, name, tab }: { rows: Encuesta[]; error:
           </div>
         </section>
 
+        <DashboardTabs
+          results={
+            <>
         <Card tag="KPI principal" title="Intención de adopción del estudiante" note="Anotarse al piloto pesa más: es un compromiso, no solo una opinión." meters={s.principal} />
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -267,8 +249,10 @@ export function Dashboard({ rows, error, name, tab }: { rows: Encuesta[]; error:
           </div>
           {rows.length > 25 && <p className="mt-2 text-xs text-slate-500">Se muestran 25 de {rows.length}. El CSV las trae todas.</p>}
         </section>
-          </>
-        )}
+            </>
+          }
+          questions={<Questions />}
+        />
       </main>
     </div>
   );
