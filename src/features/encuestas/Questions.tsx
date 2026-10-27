@@ -1,9 +1,9 @@
 import type { Audience } from '@/features/auth/demoAccess';
-import { PASAJE, SURVEYS, fmtBs, fmtPct, priceFor, type Question } from '@/features/guide/surveys';
+import { PASAJE, SURVEYS, fmtBs, fmtPct, pctOf, type Question } from '@/features/guide/surveys';
 
 /** Qué ficha mide cada pregunta (ver surveys.ts); sin entrada, es de diagnóstico. */
 const KPI: Record<Audience, Record<string, string>> = {
-  estudiante: { usaria: 'KPI principal', piloto: 'KPI principal', util: 'Apoyo A', decepcion: 'Apoyo A', whatsapp: 'Apoyo A', precio: 'Apoyo C' },
+  estudiante: { usaria: 'KPI principal', piloto: 'KPI principal', util: 'Apoyo A', facil: 'Apoyo A', whatsapp: 'Apoyo A', precio: 'Apoyo C' },
   'conductor-fiscal': { usaria: 'Apoyo B', precio: 'Apoyo C', reparto: 'Apoyo C' },
 };
 
@@ -35,10 +35,10 @@ function Answers({ q }: { q: Question }) {
       return (
         <>
           <ul className="flex flex-col gap-1.5">
-            {q.percents.map((p) => (
-              <li key={p} className={`${opt} flex justify-between gap-3`}>
-                <b>{fmtBs(priceFor(p))}</b>
-                <span className="text-slate-500">{fmtPct(p)} del pasaje</span>
+            {q.amounts.map((bs) => (
+              <li key={bs} className={`${opt} flex justify-between gap-3`}>
+                <b>{fmtBs(bs)}</b>
+                <span className="text-slate-500">{fmtPct(pctOf(bs))} del pasaje</span>
               </li>
             ))}
             <li className={opt}>Otro valor (libre, en Bs)</li>

@@ -31,6 +31,14 @@ describe('tablero de encuestas', () => {
     expect(summarize(malo).principal[0].status).toBe('refuta');
   });
 
+  it('KPI A promedia utilidad y facilidad de 1 a 5', () => {
+    const est = Array.from({ length: 10 }, (_, n) => row('estudiante', { util: '4', facil: n < 5 ? '5' : '3' }));
+    const [util, facil] = summarize(est).apoyoA;
+    expect(util.display).toBe('4 / 5');
+    expect(facil.display).toBe('4 / 5');
+    expect(facil.status).toBe('confirma');
+  });
+
   it('las respuestas viejas con contacto y sin «piloto» cuentan como anotadas', () => {
     const est = Array.from({ length: 10 }, (_, n) => row('estudiante', { usaria: 'Probablemente' }, n < 5 ? 'x@y.co' : null));
     expect(summarize(est).principal[1].display).toBe('50 %');
@@ -46,10 +54,23 @@ describe('tablero de encuestas', () => {
 
   it('agrupa el precio por opción, valor libre y mediana', () => {
     const est = ['29.5', '41.3', '41.3', '10', '100'].map((precio) => row('estudiante', { precio }));
-    const p = priceBuckets(est);
+    const p = priceBuckets(est, [29.5, 41.3, 64.9, 88.5]);
     expect(p.total).toBe(5);
     expect(p.buckets.map((b) => b.n)).toEqual([1, 1, 2, 0, 0, 1]);
     expect(p.medianPct).toBeCloseTo(3.5);
+  });
+
+  it('las opciones del conductor son 190, 130, 90 y 60 Bs', () => {
+    const cond = ['190', '60', '60', '45'].map((precio) => row('conductor-fiscal', { rol: 'Conductor', precio }));
+    const s = summarize(cond).precioConductores;
+    expect(s.buckets.map((b) => [b.label.split(' ·')[0], b.n])).toEqual([
+      ['Menos de 60\u00a0Bs', 1],
+      ['60\u00a0Bs', 2],
+      ['90\u00a0Bs', 0],
+      ['130\u00a0Bs', 0],
+      ['190\u00a0Bs', 1],
+      ['Otro valor', 0],
+    ]);
   });
 
   it('el CSV escapa comillas y lleva el correo', () => {
