@@ -170,6 +170,18 @@ export function Dashboard({ rows, error, name }: { rows: Encuesta[]; error: stri
             <Prices title="Estudiantes: adicional al pasaje" data={s.precioEstudiantes} />
             <Prices title="Conductores: comisión por pasaje" data={s.precioConductores} />
           </div>
+          {s.alternativas.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm font-bold">Otras formas de cobro que proponen los conductores</p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {s.alternativas.map((a) => (
+                  <li key={a.id} className="rounded-2xl bg-slate-50 px-3 py-2 text-sm ring-1 ring-slate-200/70">
+                    {a.texto}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
 
         <div className="grid gap-4 md:grid-cols-2">

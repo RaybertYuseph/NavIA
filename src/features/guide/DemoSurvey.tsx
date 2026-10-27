@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { Audience } from '@/features/auth/demoAccess';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
 import { readSurvey, saveSurvey } from './demoProgress';
-import { CORREO_MAX, FALTA_MAX, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, visibleQuestions } from './surveys';
+import { CORREO_MAX, FALTA_MAX, OTRA, SURVEYS, PASAJE, fmtBs, fmtPct, pctOf, visibleQuestions } from './surveys';
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 import type { View } from './tours';
@@ -25,6 +25,7 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
   const [contact, setContact] = useState(saved?.contact ?? '');
   const [pilot, setPilot] = useState(saved?.pilot ?? false);
   const [custom, setCustom] = useState('');
+  const [otherOpen, setOtherOpen] = useState(false);
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
   const q = questions[Math.min(i, questions.length - 1)];
@@ -107,7 +108,10 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                   <button
                     key={o}
                     type="button"
-                    onClick={() => pick(o)}
+                    onClick={() => {
+                      setOtherOpen(false);
+                      pick(o);
+                    }}
                     className={`rounded-2xl px-3 py-2.5 text-left text-sm font-semibold transition active:scale-[0.98] ${
                       answers[q.id] === o ? 'bg-brand-50 ring-2 ring-brand-400' : 'bg-slate-50 ring-1 ring-slate-200'
                     }`}
@@ -115,6 +119,16 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
                     {o}
                   </button>
                 ))}
+              {q.kind === 'choice' && q.other && (
+                <OtherOption
+                  label={q.other}
+                  open={otherOpen || !!answers[q.id]?.startsWith(OTRA)}
+                  value={answers[q.id]?.startsWith(OTRA) ? answers[q.id].slice(OTRA.length) : ''}
+                  onOpen={() => setOtherOpen(true)}
+                  onChange={(text) => setAnswers((a) => ({ ...a, [q.id]: `${OTRA}${text}` }))}
+                  onNext={() => setI((n) => Math.min(n + 1, questions.length - 1))}
+                />
+              )}
               {q.kind === 'scale' && (
                 <>
                   <div className="grid grid-cols-5 gap-2">
@@ -252,5 +266,41 @@ export function DemoSurvey({ audience, view, onClose }: { audience: Audience; vi
         )}
       </div>
     </div>
+  );
+}
+
+/** Opción «Otra alternativa»: al tocarla se abre un texto libre y «Siguiente». */
+function OtherOption(props: { label: string; open: boolean; value: string; onOpen: () => void; onChange: (text: string) => void; onNext: () => void }) {
+  const { label, open, value, onOpen, onChange, onNext } = props;
+  if (!open)
+    return (
+      <button type="button" onClick={onOpen} className="rounded-2xl bg-slate-50 px-3 py-2.5 text-left text-sm font-semibold ring-1 ring-slate-200 transition active:scale-[0.98]">
+        {label}…
+      </button>
+    );
+  return (
+    <form
+      className="flex flex-col gap-2 rounded-2xl bg-brand-50 p-2.5 ring-2 ring-brand-400"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (value.trim()) onNext();
+      }}
+    >
+      <label htmlFor="encuesta-otra" className="text-sm font-semibold">
+        {label}
+      </label>
+      <textarea
+        id="encuesta-otra"
+        autoFocus
+        className="field mt-0 min-h-20 resize-none bg-white"
+        value={value}
+        maxLength={FALTA_MAX - OTRA.length}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Cuéntanos cómo preferirías que se cobre"
+      />
+      <button type="submit" disabled={!value.trim()} className="btn-primary disabled:opacity-50">
+        Siguiente
+      </button>
+    </form>
   );
 }

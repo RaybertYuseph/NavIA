@@ -23,6 +23,7 @@ function Answers({ q }: { q: Question }) {
               {o}
             </li>
           ))}
+          {q.other && <li className={opt}>{q.other} (texto libre)</li>}
         </ul>
       );
     case 'scale':

@@ -19,7 +19,8 @@ import type { Audience } from '@/features/auth/demoAccess';
  */
 type ShowIf = { showIf?: { id: string; in: string[] } };
 export type Question = (
-  | { id: string; kind: 'choice'; text: string; options: string[] }
+  /** `other`: última opción con texto libre; se guarda como «Otra: <texto>». */
+  | { id: string; kind: 'choice'; text: string; options: string[]; other?: string }
   | { id: string; kind: 'scale'; text: string; low: string; high: string }
   | { id: string; kind: 'open'; text: string; placeholder: string }
   /** Montos en Bs (cada uno con su % del pasaje), más uno libre; se guarda el monto en Bs. */
@@ -60,13 +61,14 @@ export const SURVEYS: Record<Audience, Question[]> = {
     { id: 'facil', kind: 'scale', text: '¿Qué tan fácil te pareció de usar?', low: 'Muy difícil', high: 'Muy fácil' },
     { id: 'preocupa', kind: 'choice', text: '¿Qué es lo que más te preocupa de usarla?', options: ['Gasto de datos o batería', 'Que me rastreen', 'Distraerme al manejar', 'Nada'] },
     { id: 'precio', kind: 'price', amounts: DRIVER_AMOUNTS, text: 'Respuesta honesta: viendo lo que integraría la app, ¿cuál consideras que es el valor adecuado por pasaje por concepto de comisión para NavIA?' },
-    { id: 'reparto', kind: 'choice', text: 'Sea cual sea el monto, ¿quién debería pagar la comisión de NavIA por cada pasaje?', options: ['La absorbo yo (sale de mi pasaje)', '50/50 con el estudiante (mitad y mitad)', 'Que la pague completa el estudiante', 'No pagaría comisión'] },
+    { id: 'reparto', kind: 'choice', text: 'Sea cual sea el monto, ¿quién debería pagar la comisión de NavIA por cada pasaje?', options: ['La absorbo yo (sale de mi pasaje)', '50/50 con el estudiante (mitad y mitad)', 'Que la pague completa el estudiante'], other: 'Otra alternativa' },
     { id: 'falta', kind: 'open', showIf: NO_ADOPTA, text: '¿Qué le faltaría a NavIA para que la usaras en tu línea?', placeholder: 'Ej.: que gaste menos datos, que la apruebe la asociación, sin comisión…' },
     { id: 'piloto', kind: 'contact', text: 'Para terminar, déjanos tu correo.', pilot: 'Quiero que mi unidad o mi línea esté en el piloto' },
   ],
 };
 
 export const FALTA_MAX = 300;
+export const OTRA = 'Otra: ';
 export const CORREO_MAX = 200;
 
 /** Las preguntas que ve esta persona según lo que ya respondió. */

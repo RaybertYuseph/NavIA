@@ -1,4 +1,4 @@
-import { DRIVER_AMOUNTS, PRICE_PERCENTS, fmtBs, fmtPct, pctOf, priceFor } from '@/features/guide/surveys';
+import { DRIVER_AMOUNTS, OTRA, PRICE_PERCENTS, fmtBs, fmtPct, pctOf, priceFor } from '@/features/guide/surveys';
 
 /**
  * Tablero de la prueba de 7 días (/encuestas): convierte las filas de la tabla encuestas en las
@@ -127,6 +127,7 @@ export function summarize(rows: Encuesta[]) {
     precioEstudiantes: priceBuckets(est, PRICE_PERCENTS.map((p) => priceFor(p))),
     precioConductores: priceBuckets(cond, DRIVER_AMOUNTS),
     porDia: [...porDia.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([dia, n]) => ({ dia, ...n })),
+    alternativas: cond.filter((r) => r.respuestas.reparto?.startsWith(OTRA)).map((r) => ({ id: r.id, texto: r.respuestas.reparto.slice(OTRA.length) })),
     faltas: rows.filter((r) => r.respuestas.falta).map((r) => ({ id: r.id, audiencia: r.audiencia, texto: r.respuestas.falta, fecha: r.created_at })),
   };
 }
