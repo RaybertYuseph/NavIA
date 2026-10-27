@@ -154,6 +154,11 @@ export function summarize(all: Encuesta[]) {
 
   return {
     fueraDeSegmento: fuera.length,
+    // Interés fuera de la ruta del piloto: no entra en los KPI, sirve como lista de expansión.
+    otrasRutas: {
+      usarian: fuera.filter((r) => r.audiencia === 'estudiante' && siUsaria(r)).length,
+      anotados: fuera.filter((r) => r.audiencia === 'estudiante' && anotado(r)).length,
+    },
     rutas: { estudiantes: cuenta(all.filter((r) => r.audiencia === 'estudiante').map(rutaDe)), conductores: cuenta(all.filter((r) => r.audiencia === 'conductor-fiscal').map(rutaDe)) },
     canales: cuenta(rows.map((r) => r.respuestas.canal ?? 'sin dato')),
     estudiantes: est.length,

@@ -270,6 +270,11 @@ export function Dashboard(props: { rows: Encuesta[]; error: string | null; event
             Los KPI cuentan solo el segmento: la ruta Guarenas/Guatire → USM.{' '}
             <b>{s.fueraDeSegmento === 1 ? '1 respuesta de otra ruta queda' : `${s.fueraDeSegmento} respuestas de otras rutas quedan`} fuera</b>. Responsable de los KPI: {RESPONSABLE}.
           </p>
+          {s.fueraDeSegmento > 0 && (
+            <p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200/70">
+              Estudiantes de otras rutas (lista de expansión, no suma a los KPI): <b>{s.otrasRutas.usarian}</b> la usarían y <b>{s.otrasRutas.anotados}</b> se anotaron al piloto.
+            </p>
+          )}
         </section>
 
         <DashboardTabs
