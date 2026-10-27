@@ -96,8 +96,10 @@ export function NaviaTour(props: {
   onTouring: (on: boolean) => void;
   onClose: () => void;
   onSurvey: () => void;
+  /** La encuesta está abierta: el tour automático espera a que se cierre. */
+  hold: boolean;
 }) {
-  const { view, userId, firstName, manual, onTab, onTouring, onClose, onSurvey } = props;
+  const { view, userId, firstName, manual, onTab, onTouring, onClose, onSurvey, hold } = props;
   // Solo los pasos cuyo elemento está en pantalla (o aparece al abrir su pestaña): sin salida a su
   // cargo el conductor no tiene botón de acción ni paradas que mostrar.
   const [steps, setSteps] = useState(() => TOURS[view]);
@@ -123,10 +125,10 @@ export function NaviaTour(props: {
 
   // Automático: solo la primera vez de esta cuenta en este teléfono.
   useEffect(() => {
-    if (manual || readSeen(userId)) return;
+    if (manual || hold || readSeen(userId)) return;
     const t = setTimeout(() => setPhase('ask'), 700);
     return () => clearTimeout(t);
-  }, [manual, userId]);
+  }, [manual, hold, userId]);
 
   // En la demo el día puede estar vacío: antes del recorrido se simulan salidas (una en camino,
   // otra cargando y la del conductor) para que cada paso muestre algo real.
