@@ -168,7 +168,7 @@ export function Dashboard({ rows, error, name }: { rows: Encuesta[]; error: stri
           </div>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <Prices title="Estudiantes: adicional al pasaje" data={s.precioEstudiantes} />
-            <Prices title="Conductores: comisión por viaje" data={s.precioConductores} />
+            <Prices title="Conductores: comisión por pasaje" data={s.precioConductores} />
           </div>
         </section>
 
