@@ -35,7 +35,7 @@ end $$;
 
 -- ───── Fiscal ─────
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000c1', false);
-select pg_temp.assert((select count(*) = 3 from profiles), 'el fiscal ve los perfiles');
+select pg_temp.assert((select count(*) = 2 from profiles), 'el fiscal ve los perfiles de su línea (no los de estudiantes, 0016)');
 update vehicles set photo_url = 'https://ejemplo.test/bus.jpg' where id = '00000000-0000-0000-0000-000000000020';
 select pg_temp.assert((select photo_url is not null from vehicles where id = '00000000-0000-0000-0000-000000000020'),
   'el fiscal guarda la foto de la unidad');
