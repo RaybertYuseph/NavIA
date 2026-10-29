@@ -1,24 +1,29 @@
-import { AppHeader } from '@/components/AppHeader';
+import { AppShell } from '@/components/AppShell';
 import { DriverConsole } from '@/features/driver/DriverConsole';
-import { TRIP_SELECT, type Trip } from '@/features/trips/types';
+import { fetchTodayTrips } from '@/features/trips/query';
+import { ensureDemoDay } from '@/lib/demoDay';
+import { fetchRoutes, fetchVehicles } from '@/lib/lineData';
 import { requireRole } from '@/lib/profile';
-import { caracasDayRange } from '@/lib/time';
 
 export default async function DriverHome() {
-  const { supabase, profile } = await requireRole(['driver']);
-  const { from, to } = caracasDayRange();
-  const { data } = await supabase
-    .from('trips')
-    .select(TRIP_SELECT)
-    .eq('driver_id', profile.id)
-    .gte('scheduled_at', from)
-    .lt('scheduled_at', to)
-    .order('scheduled_at');
-
+  // La preparación del día de demo corre a la par de la sesión: no depende de ella.
+  const [{ supabase, profile }] = await Promise.all([requireRole(['driver']), ensureDemoDay()]);
+  const [trips, vehicles, routes, last] = await Promise.all([
+    fetchTodayTrips(supabase, { driverId: profile.id }),
+    fetchVehicles(supabase),
+    fetchRoutes(supabase),
+    // Su unidad de siempre: la de su última salida.
+    supabase.from('trips').select('vehicle_id').eq('driver_id', profile.id).not('vehicle_id', 'is', null)
+      .order('scheduled_at', { ascending: false }).limit(1).maybeSingle(),
+  ]);
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col p-4">
-      <AppHeader name={profile.full_name} subtitle="Conductor" />
-      <DriverConsole trips={(data ?? []) as unknown as Trip[]} />
-    </main>
+    <AppShell profile={profile}>
+      <DriverConsole
+        trips={trips}
+        vehicles={vehicles.filter((v) => v.in_service !== false)}
+        routes={routes.filter((r) => !r.coming_soon && r.stops.length > 0)}
+        myVehicleId={(last.data as { vehicle_id: string } | null)?.vehicle_id ?? null}
+      />
+    </AppShell>
   );
 }

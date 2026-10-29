@@ -1,11 +1,251 @@
 @import 'tailwindcss';
 
+/* Marca NavIA: azul claro fresco (sky/cyan) con acento índigo y texto azul noche. */
+@theme {
+  --color-brand-50: #effaff;
+  --color-brand-100: #dcf3ff;
+  --color-brand-200: #b6e8ff;
+  --color-brand-300: #7dd6fd;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+  --color-brand-700: #0369a1;
+  --color-ink: #0b1b3a;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
 :root {
   color-scheme: light;
+  background: #eef6fb;
+}
+
+button:focus-visible, a:focus-visible, [role='switch']:focus-visible {
+  outline: 3px solid var(--color-brand-300);
+  outline-offset: 2px;
 }
 
 body {
-  background: #f1f5f9;
-  color: #0f172a;
+  background:
+    radial-gradient(60rem 30rem at 110% -10%, rgb(56 189 248 / 0.18), transparent 60%),
+    radial-gradient(40rem 24rem at -20% 0%, rgb(99 102 241 / 0.10), transparent 60%),
+    linear-gradient(180deg, #f3fbff 0%, #eef6fb 100%);
+  color: var(--color-ink);
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Tarjetas blancas, borde casi invisible y sombra amplia y suave. */
+.card {
+  background: rgb(255 255 255 / 0.92);
+  border: 1px solid rgb(148 163 184 / 0.18);
+  box-shadow: 0 1px 2px rgb(11 27 58 / 0.04), 0 12px 32px -16px rgb(14 116 233 / 0.28);
+}
+
+/* Barras fijas de vidrio (arriba y abajo). */
+.glass {
+  background: rgb(255 255 255 / 0.72);
+  backdrop-filter: saturate(1.6) blur(16px);
+  -webkit-backdrop-filter: saturate(1.6) blur(16px);
+}
+
+.section-title {
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(100 116 139);
+}
+
+.chip {
+  border-radius: 9999px;
+  background: var(--color-brand-50);
+  padding: 0.5rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-brand-700);
+  box-shadow: inset 0 0 0 1px var(--color-brand-100);
+  transition: transform 0.1s;
+}
+.chip:active { transform: scale(0.97); }
+.chip:disabled { opacity: 0.5; }
+
+.btn-primary {
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  padding: 0.85rem 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 10px 24px -10px rgb(14 165 233 / 0.7);
+  transition: transform 0.1s;
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.4; }
+
+.field {
+  margin-top: 0.25rem;
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid rgb(203 213 225 / 0.9);
+  background: white;
+  padding: 0.75rem;
+  font-size: 1rem;
+  color: var(--color-ink);
+}
+.field:focus { outline: 2px solid var(--color-brand-300); outline-offset: 1px; }
+
+.btn-ghost {
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: rgb(51 65 85);
+  box-shadow: inset 0 0 0 1px rgb(203 213 225);
+}
+
+.brand-text {
+  background: linear-gradient(90deg, #0ea5e9, #22d3ee 45%, #6366f1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-hero {
+  background: linear-gradient(135deg, #0ea5e9 0%, #22b8f0 40%, #6366f1 100%);
+  box-shadow: 0 12px 32px -12px rgb(14 165 233 / 0.6);
+}
+
+/* NavIA gota: los orígenes en px son coordenadas del dibujo (viewBox 430×522). */
+@keyframes gota-bob {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-12px) scale(0.985, 1.015); }
+}
+@keyframes gota-shadow {
+  50% { transform: scale(0.85); opacity: 0.7; }
+}
+@keyframes gota-walk {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-18px) rotate(3deg); }
+}
+@keyframes gota-hand {
+  0%, 100% { transform: rotate(0); }
+  50% { transform: rotate(-10deg); }
+}
+@keyframes gota-point {
+  0%, 100% { transform: rotate(-22deg) translateY(-6px); }
+  50% { transform: rotate(-12deg) translateY(-14px); }
+}
+@keyframes gota-blink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+@keyframes agent-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.gota-bob { animation: gota-bob 2.8s ease-in-out infinite; transform-origin: 215px 500px; }
+.gota-shadow { animation: gota-shadow 2.8s ease-in-out infinite; transform-origin: 215px 505px; }
+.gota-walk { animation: gota-walk 0.44s ease-in-out infinite; transform-origin: 215px 500px; }
+.gota-hand { animation: gota-hand 2.4s ease-in-out infinite; transform-origin: 350px 235px; }
+.gota-point { animation: gota-point 1.2s ease-in-out infinite; transform-origin: 350px 235px; }
+.gota-blink { animation: gota-blink 4.2s infinite; transform-box: fill-box; transform-origin: center; }
+.agent-pulse { animation: agent-pulse 1.6s ease-in-out infinite; }
+
+@keyframes tour-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheet-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes typing {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+.tour-pop { animation: tour-pop 0.25s ease-out; }
+.sheet-up { animation: sheet-up 0.25s ease-out; }
+.typing-dot {
+  display: inline-block;
+  height: 0.45rem;
+  width: 0.45rem;
+  border-radius: 9999px;
+  background: rgb(100 116 139);
+  animation: typing 1s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-pop, .sheet-up, .typing-dot,
+  .gota-bob, .gota-shadow, .gota-walk, .gota-hand, .gota-point, .gota-blink, .agent-pulse { animation: none; }
+}
+
+/* ───── Mapa con el estilo de NavIA (Leaflet) ───── */
+.navia-map .leaflet-tile-pane { filter: saturate(0.75) hue-rotate(-8deg) brightness(1.03); }
+.navia-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgb(14 165 233 / 0.10), rgb(99 102 241 / 0.06) 60%, transparent);
+}
+.navia-map.leaflet-container .leaflet-control-zoom.leaflet-bar {
+  border: none;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgb(11 27 58 / 0.15);
+}
+.navia-map .leaflet-control-zoom a {
+  width: 2.25rem;
+  height: 2.25rem;
+  line-height: 2.25rem;
+  color: #0b1b3a;
+  font-weight: 700;
+  border-bottom-color: rgb(226 232 240);
+}
+.navia-map .leaflet-control-attribution {
+  border-radius: 0.6rem 0 0 0;
+  background: rgb(255 255 255 / 0.8);
+  font-size: 10px;
+}
+.navia-stop {
+  display: flex;
+  height: 26px;
+  width: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid #0ea5e9;
+  color: #0369a1;
+  font: 800 11px/1 var(--font-jakarta), system-ui, sans-serif;
+  box-shadow: 0 2px 6px rgb(11 27 58 / 0.25);
+}
+.navia-stop.is-done { background: #10b981; border-color: #fff; color: #fff; }
+.navia-tip { border-radius: 0.75rem; font: 600 12px var(--font-jakarta), system-ui, sans-serif; }
+.navia-bus {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  color: #fff;
+  font: 700 12px/1 var(--font-jakarta), system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgb(14 116 233 / 0.4);
+}
+.navia-bus::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom: 0;
+  border-top-color: #4f7cf0;
+}
+.navia-bus img { height: 22px; width: 22px; border-radius: 9999px; background: #fff; object-fit: contain; }
+.navia-bus.is-stale { background: #94a3b8; box-shadow: 0 4px 10px rgb(11 27 58 / 0.2); }
+.navia-bus.is-stale::after { border-top-color: #94a3b8; }

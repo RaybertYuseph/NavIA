@@ -5,18 +5,25 @@ PWA para el transporte universitario (piloto: Universidad Santa María). El estu
 - PRD (Fase 1): https://claude.ai/code/artifact/2b0fe6a6-e272-42ce-9d02-88feb421ad9e
 - Arquitectura (Fase 2): https://claude.ai/code/artifact/0bc35256-d4ce-4aea-9828-f55de1e13290
 
-Stack: Next.js 15 (App Router) + TypeScript + Tailwind 4, Supabase (Postgres, Auth OTP, Realtime), Serwist (service worker) y Dexie (cola offline).
+Stack: Next.js 15 (App Router) + TypeScript + Tailwind 4, Supabase (Postgres, Auth, Realtime, Storage), Leaflet, Serwist (service worker) y Dexie (cola offline).
 
-## Qué hace el corte 1 (sprints 1 y 2)
+## Las tres vistas (corte 2)
 
-| Zona | Ruta | Qué hace |
+| Quién | Ruta | Qué ve y qué hace |
 | --- | --- | --- |
-| Todos | `/login` | Entrar o crear cuenta con correo y contraseña, sin verificar el correo (E1-H1). El código por correo está listo pero apagado (`NEXT_PUBLIC_LOGIN_MODE=otp`) |
-| Estudiante | `/` | Salidas de hoy con estado en vivo, última parada y "ubicación hace X min" (E5-H1) |
-| Conductor | `/conductor` | 3 botones: *En camino*, *Llegué a: (próxima parada)*, *Fin de ruta*; GPS cada 20 s con pantalla encendida (E3-H1, E3-H2) |
-| Coordinador | `/panel` | Por ahora, las salidas en vivo |
+| Fiscal de la línea (`coordinator`) | `/panel` | Unidades en ruta, disponibles y fuera de servicio; mapa en vivo; foto, placa, conductor y última parada de cada unidad; estudiantes en espera por ruta; salidas de hoy por ruta; sube la foto de cada unidad; *Reiniciar demo* |
+| Conductor (`driver`) | `/conductor` | Marca su unidad *disponible*; ve cuántos estudiantes esperan en cada parada; *En camino*, *Llegué a: (parada)*, *Parada completada · seguir*, *Fin de ruta*; lista de paradas con ✓; GPS cada 20 s; funciona sin señal |
+| Estudiante (`student`) | `/` | NavIA, el agente, lo saluda; próxima unidad en salir (hora, foto y placa); *Estoy en la parada* (marca dónde espera y ve cuántos esperan con él); unidades en camino en el mapa con su próxima parada; rutas y horarios de hoy |
 
-Cada usuario cae en su zona según su rol (`profiles.role`). La app se instala como PWA y abre sin señal después de la primera visita.
+**Estoy en la parada:** el conteo por parada vive en `trips.waiting` y llega por Realtime; cuando el conductor toca *Llegué a* esa parada, la espera se cierra sola. Nadie ve quién espera, solo cuántos.
+
+**Marca:** NavIA es una gota azul con audífonos (`src/features/brand/NaviaAgent.tsx`). El cuerpo y la mano con el pin son imágenes en `public/brand/gota/` y la cara LED (ojos, boca que habla) es SVG animable. La guía vive en `src/features/guide/`: el tour inicial (NavIA camina hasta cada parte de la pantalla) y el botón flotante que responde preguntas con datos en vivo. La paleta está en `src/app/globals.css` (`brand-*`).
+
+Todos entran por `/login` (correo y contraseña, sin verificar el correo) y caen en su vista según `profiles.role`. El código por correo está listo pero apagado (`NEXT_PUBLIC_LOGIN_MODE=otp`).
+
+### Modo demo (presentación por enlace)
+
+Con `NEXT_PUBLIC_DEMO=1`, `/login` muestra tres botones (Fiscal, Conductor, Estudiante) que entran con las cuentas `fiscal@`, `conductor@` y `estudiante@navia.test` usando `NEXT_PUBLIC_DEMO_PASSWORD`. Esa contraseña queda pública en el navegador: úsala solo para esas tres cuentas. El botón *Reiniciar demo* del fiscal deja las salidas de hoy como al inicio del día (si hoy no hay, copia las del último día).
 
 **Sin señal:** cada botón y cada punto GPS se guardan primero en el teléfono (IndexedDB) y se envían en orden a `/api/sync` cuando vuelve la red. Reenviar no duplica nada. El conductor ve cuántos envíos tiene pendientes.
 
@@ -37,11 +44,18 @@ Abre la app en dos ventanas (una como conductor, otra como estudiante) y toca lo
 
 ### Proyecto Supabase en la nube
 
-1. **Tablas:** SQL Editor → pega y corre `supabase/migrations/*.sql` en orden (o `npx supabase db push`).
+1. **Tablas:** SQL Editor → pega y corre `supabase/migrations/*.sql` en orden (o `npx supabase db push`). La `0004` crea también el bucket público `unidades` para las fotos.
 2. **Crear cuenta sin verificar el correo:** Authentication → Sign In / Providers → Email → apaga *Confirm email*.
-3. **(Más adelante) código por correo:** configura un SMTP propio (Authentication → Emails → SMTP Settings), pega `supabase/templates/codigo.html` en las plantillas *Magic Link* y *Confirm signup* y pon `NEXT_PUBLIC_LOGIN_MODE=otp`.
-4. **Datos del piloto:** cuando el conductor y un estudiante hayan entrado una vez, corre `supabase/datos_piloto.sql` en el SQL Editor con sus correos.
-5. Pon la URL y la anon key en `.env.local`.
+3. **Datos del piloto:** cuando el conductor y un estudiante hayan entrado una vez, corre `supabase/datos_piloto.sql` en el SQL Editor con sus correos.
+4. **Demo:** crea en la app las cuentas `fiscal@`, `conductor@` y `estudiante@navia.test` con la misma contraseña y corre `supabase/demo.sql` (unidades, roles y reparto de las salidas de hoy).
+5. **(Más adelante) código por correo:** configura un SMTP propio (Authentication → Emails → SMTP Settings), pega `supabase/templates/codigo.html` en las plantillas *Magic Link* y *Confirm signup* y pon `NEXT_PUBLIC_LOGIN_MODE=otp`.
+6. Pon la URL y la anon key en `.env.local`.
+
+### Publicar en Vercel
+
+1. vercel.com → *Add New… → Project* → importa `RaybertYuseph/navia`.
+2. *Environment Variables:* `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_DEMO=1`, `NEXT_PUBLIC_DEMO_PASSWORD`.
+3. *Deploy.* En Supabase → Authentication → URL Configuration, pon la URL de Vercel en *Site URL*.
 
 ## Pruebas
 
@@ -59,6 +73,19 @@ supabase/
   migrations/0001_init.sql     esquema de la Fase 2
   migrations/0002_corte1.sql   correcciones de seguridad (ver comentarios) y perfil automático
   migrations/0003_login_correo.sql  login por correo: el perfil toma el nombre del correo
+  migrations/0004_tres_vistas.sql   foto y disponibilidad de unidades, reinicio de la demo
+  migrations/0005_espera_en_parada.sql  "Estoy en la parada" y conteo por parada
+  migrations/0006_espera_con_gps.sql    "Estoy aquí" solo a 50 m o menos de la parada
+  migrations/0007_rutas_y_unidades.sql  corredores, rutas "Próximamente" y unidad asignada a cada ruta
+  migrations/0008_salidas_flexibles_y_deshacer.sql  salidas sin horario fijo (pendientes de unidad) y "Deshacer" del conductor
+  migrations/0009_gestor_de_unidades.sql  gestor de unidades del fiscal, avisos al conductor y disponibilidad que sigue a la salida
+  migrations/0010_hora_al_activarse.sql  la hora de salida la pone el conductor al activarse; el reinicio de la demo empieza el día vacío
+  migrations/0011_salidas_viejas_abiertas.sql  una salida de un día anterior que quedó abierta ya no bloquea la unidad
+  migrations/0012_reinicio_demo.sql  vuelve a dejar "Reiniciar demo" como en la versión final de la 0010
+  migrations/0013_simulacion_demo.sql  demo: salidas de ejemplo que se mueven solas, para el tour y el botón "Simular salidas"
+  demo.sql                     cuentas, unidades y salidas de la demo
+  rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
+  rutas_regreso.sql            la vuelta desde la USM de cada ruta de ida (paradas invertidas; después de la 0007)
   templates/codigo.html        correo con el código de entrada
   datos_piloto.sql             ruta, paradas y salidas de hoy para el proyecto en la nube
   seed.sql                     USM, 1 operador, 1 ruta con 5 paradas, 2 salidas hoy
@@ -66,11 +93,14 @@ supabase/
 src/
   app/                         rutas por rol: (auth) (student) (driver) (coordinator), api/sync
   features/driver/             botones, GPS, wake lock
-  features/trips/              estado en vivo (Realtime + respaldo cada 30 s)
+  features/trips/              vista del estudiante y estado en vivo (Realtime + respaldo cada 10 s)
+  features/panel/              vista del fiscal
+  features/map/                mapa Leaflet + OpenStreetMap
+  features/vehicles/           foto de la unidad
   lib/offline/                 cola Dexie y sincronizador
   lib/supabase/                clientes de navegador, servidor y middleware
 ```
 
 ## Próximos sprints
 
-3. Rutas y reservas (E2) · 4. Identidad, QR y abordaje (E1-H2, E1-H3, E3-H3) · 5. Pagos y conciliación (E4) · 6. Norbit con DeepSeek y avisos push (E5).
+3. Rutas y reservas (E2) · 4. Identidad, QR y abordaje (E1-H2, E1-H3, E3-H3) · 5. Pagos y conciliación (E4) · 6. Agente NavIA con DeepSeek y avisos push (E5).

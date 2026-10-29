@@ -13,5 +13,5 @@ PSQL=(psql -h "$TMP" -p "$PORT" -U postgres -d postgres -v ON_ERROR_STOP=1 -q -X
 "${PSQL[@]}" -f supabase/tests/stub_auth.sql
 for f in supabase/migrations/*.sql; do "${PSQL[@]}" -f "$f"; done
 "${PSQL[@]}" -f supabase/seed.sql
-"${PSQL[@]}" -f supabase/tests/corte1.test.sql
-echo "OK: migraciones, seed y pruebas de corte 1"
+for t in supabase/tests/corte*.test.sql; do "${PSQL[@]}" -f "$t"; done
+echo "OK: migraciones, seed y pruebas"

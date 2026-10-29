@@ -64,7 +64,7 @@ export function OtpLogin() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <button disabled={busy} className="rounded-xl bg-indigo-600 p-4 text-lg font-semibold text-white disabled:opacity-50">
+          <button disabled={busy} className="rounded-xl bg-linear-to-r from-brand-500 to-indigo-500 p-4 shadow-lg shadow-brand-500/30 text-lg font-semibold text-white disabled:opacity-50">
             {busy ? 'Enviando…' : 'Recibir código'}
           </button>
         </form>
@@ -82,7 +82,7 @@ export function OtpLogin() {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           />
-          <button disabled={busy || code.length < OTP_MIN} className="rounded-xl bg-indigo-600 p-4 text-lg font-semibold text-white disabled:opacity-50">
+          <button disabled={busy || code.length < OTP_MIN} className="rounded-xl bg-linear-to-r from-brand-500 to-indigo-500 p-4 shadow-lg shadow-brand-500/30 text-lg font-semibold text-white disabled:opacity-50">
             {busy ? 'Verificando…' : 'Entrar'}
           </button>
           <p className="text-sm text-slate-500">Si no lo ves en unos minutos, revisa la carpeta de spam.</p>

@@ -2,6 +2,38 @@ export type TripStatus = 'scheduled' | 'en_camino' | 'en_parada' | 'finalizada' 
 
 export type Stop = { id: string; seq: number; name: string; lat: number; lng: number };
 
+export type Vehicle = {
+  id: string;
+  plate: string;
+  capacity: number;
+  photo_url: string | null;
+  available: boolean;
+  /** Ruta que cubre la unidad (0007); solo la trae la consulta del fiscal. */
+  route_id?: string | null;
+  /** Desde cuándo está disponible y en la parada de salida de qué ruta (0008); solo para el fiscal. */
+  available_at?: string | null;
+  available_route_id?: string | null;
+  available_driver_id?: string | null;
+  /** Gestor de unidades (0009): desincorporada (active false) o fuera de servicio por el fiscal. */
+  active?: boolean;
+  in_service?: boolean;
+};
+
+/** Ruta de la línea, con su corredor (ida y regreso juntos) y si está por abrir. */
+export type RouteInfo = {
+  id: string;
+  name: string;
+  direction: 'ida' | 'regreso';
+  corridor: string | null;
+  coming_soon: boolean;
+  stops: Stop[];
+};
+
+/** Clave del filtro del fiscal: el corredor si lo tiene, si no el nombre de la ruta. */
+export function routeKey(r: Pick<RouteInfo, 'corridor' | 'name'>) {
+  return r.corridor ?? r.name;
+}
+
 export type Trip = {
   id: string;
   route_id: string;
@@ -11,17 +43,25 @@ export type Trip = {
   last_lat: number | null;
   last_lng: number | null;
   last_seen_at: string | null;
-  routes: { name: string; direction: 'ida' | 'regreso'; stops: Stop[] } | null;
+  started_at: string | null;
+  driver_id: string | null;
+  vehicle_id: string | null;
+  /** Estudiantes esperando por parada: { stop_id: n }. */
+  waiting: Record<string, number>;
+  routes: { name: string; direction: 'ida' | 'regreso'; active: boolean; fare_usd: number; stops: Stop[] } | null;
+  vehicles: Vehicle | null;
 };
 
 /** Columnas que leen las pantallas (una sola consulta con ruta y paradas). */
 export const TRIP_SELECT =
-  'id, route_id, scheduled_at, status, current_stop_id, last_lat, last_lng, last_seen_at, routes(name, direction, stops(id, seq, name, lat, lng))';
+  'id, route_id, vehicle_id, driver_id, scheduled_at, started_at, status, current_stop_id, last_lat, last_lng, last_seen_at, waiting, ' +
+  'routes(name, direction, active, fare_usd, stops(id, seq, name, lat, lng)), ' +
+  'vehicles(id, plate, capacity, photo_url, available)';
 
 export const STATUS_LABEL: Record<TripStatus, string> = {
   scheduled: 'Programada',
   en_camino: 'En camino',
-  en_parada: 'En parada',
+  en_parada: 'Cargando',
   finalizada: 'Finalizada',
   cancelada: 'Cancelada',
 };
@@ -36,4 +76,21 @@ export const STATUS_STYLE: Record<TripStatus, string> = {
 
 export function sortedStops(trip: Pick<Trip, 'routes'>) {
   return [...(trip.routes?.stops ?? [])].sort((a, b) => a.seq - b.seq);
+}
+
+export function isLive(t: Pick<Trip, 'status'>) {
+  return t.status === 'en_camino' || t.status === 'en_parada';
+}
+
+/** "cargando en la salida" mientras está en la primera parada; si no, "en camino". Solo para salidas en vivo. */
+export function liveLabel(trip: Trip) {
+  return trip.status === 'en_parada' && trip.current_stop_id === sortedStops(trip)[0]?.id ? 'cargando en la salida' : 'en camino';
+}
+
+export function currentStop(trip: Trip) {
+  return sortedStops(trip).find((s) => s.id === trip.current_stop_id) ?? null;
+}
+
+export function totalWaiting(trip: Pick<Trip, 'waiting'>) {
+  return Object.values(trip.waiting ?? {}).reduce((a, n) => a + n, 0);
 }

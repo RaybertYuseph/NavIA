@@ -8,7 +8,7 @@ begin
 end $$;
 
 -- Perfiles creados por el trigger de registro
-select pg_temp.assert((select count(*) = 2 from profiles), 'el registro crea el perfil');
+select pg_temp.assert((select count(*) = 3 from profiles), 'el registro crea el perfil');
 select pg_temp.assert((select full_name = 'Conductor de Prueba' from profiles where role = 'driver'), 'el perfil toma el nombre del registro');
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000f1', 'maria.lopez@gmail.com');
 select pg_temp.assert((select full_name = 'maria.lopez' and role = 'student' and status = 'pending'
@@ -77,7 +77,7 @@ end $$;
 
 update profiles set full_name = 'Ana Pérez' where id = auth.uid();
 select pg_temp.assert((select full_name = 'Ana Pérez' from profiles where id = auth.uid()), 'el estudiante puede corregir su nombre');
-select pg_temp.assert((select count(*) = 0 from vehicles), 'el estudiante no ve las unidades del operador');
+select pg_temp.assert((select count(*) = 1 and bool_and(plate is not null) from vehicles), 'el estudiante ve la placa de la unidad');
 
 -- ───── Anónimo ─────
 reset role;
