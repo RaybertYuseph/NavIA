@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { PASSWORD_MIN, normalizeEmail } from '@/lib/email';
+import { PASSWORD_MIN, normalizeCedula, normalizeEmail, normalizePhone } from '@/lib/email';
 import { FormError } from './FormError';
 
 type Mode = 'entrar' | 'crear';
@@ -17,6 +17,8 @@ export function PasswordLogin() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>('entrar');
   const [fullName, setFullName] = useState('');
+  const [cedula, setCedula] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +35,10 @@ export function PasswordLogin() {
     if (!normalized) return setError('Escribe un correo válido, por ejemplo ana@gmail.com.');
     if (password.length < PASSWORD_MIN) return setError(`La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`);
     if (mode === 'crear' && fullName.trim().length < 3) return setError('Escribe tu nombre y apellido.');
+    const ci = normalizeCedula(cedula);
+    const tel = normalizePhone(phone);
+    if (mode === 'crear' && !ci) return setError('Escribe tu cédula, solo números (por ejemplo 27123456).');
+    if (mode === 'crear' && !tel) return setError('Escribe tu teléfono, por ejemplo 0414 1234567.');
 
     setBusy(true);
     setError(null);
@@ -43,7 +49,7 @@ export function PasswordLogin() {
         : await supabase.auth.signUp({
             email: normalized,
             password,
-            options: { data: { full_name: fullName.trim() } },
+            options: { data: { full_name: fullName.trim(), cedula: ci, phone: tel } },
           });
     setBusy(false);
 
@@ -78,6 +84,27 @@ export function PasswordLogin() {
           <>
             <label className="text-sm font-medium" htmlFor="name">Nombre y apellido</label>
             <input id="name" autoComplete="name" className={inputClass} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <label className="text-sm font-medium" htmlFor="cedula">Cédula</label>
+            <input
+              id="cedula"
+              inputMode="numeric"
+              placeholder="27123456"
+              className={inputClass}
+              value={cedula}
+              onChange={(e) => setCedula(e.target.value)}
+            />
+            <label className="text-sm font-medium" htmlFor="phone">Teléfono</label>
+            <input
+              id="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="0414 1234567"
+              className={inputClass}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <p className="text-sm text-slate-500">El fiscal de la línea usa tu cédula para aprobar tu cuenta.</p>
           </>
         )}
         <label className="text-sm font-medium" htmlFor="email">Correo</label>

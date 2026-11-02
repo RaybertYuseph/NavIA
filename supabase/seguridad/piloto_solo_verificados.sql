@@ -5,9 +5,9 @@
 -- "pendiente" no ve salidas, unidades, rutas ni paradas hasta que el fiscal la aprueba
 -- (profiles.status = 'verified'). Conductores, fiscales y admin no cambian.
 --
--- No está en migrations/ a propósito: mientras no exista el botón de aprobar en el panel, los
--- estudiantes que se registren solos verían la app vacía. Las cuentas de la demo ya son
--- 'verified' y siguen funcionando. Para aprobar a mano mientras tanto (SQL Editor):
+-- No está en migrations/ a propósito: se corre al arrancar el piloto real, después de la 0017
+-- (pestaña Estudiantes del panel del fiscal). Las cuentas de la demo ya son 'verified' y siguen
+-- funcionando. Para aprobar a mano desde el SQL Editor:
 --   update profiles set status = 'verified', verified_at = now()
 --   where id = (select id from auth.users where lower(email) = 'correo@del.estudiante');
 

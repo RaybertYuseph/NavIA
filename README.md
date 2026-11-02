@@ -83,6 +83,8 @@ supabase/
   migrations/0011_salidas_viejas_abiertas.sql  una salida de un día anterior que quedó abierta ya no bloquea la unidad
   migrations/0012_reinicio_demo.sql  vuelve a dejar "Reiniciar demo" como en la versión final de la 0010
   migrations/0013_simulacion_demo.sql  demo: salidas de ejemplo que se mueven solas, para el tour y el botón "Simular salidas"
+  migrations/0014 a 0016       encuestas, eventos de la demo y seguridad (ver supabase/seguridad/README.md)
+  migrations/0017_aprobar_estudiantes.sql  registro con cédula y teléfono; el fiscal aprueba o rechaza en la pestaña Estudiantes
   demo.sql                     cuentas, unidades y salidas de la demo
   rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
   rutas_regreso.sql            la vuelta desde la USM de cada ruta de ida (paradas invertidas; después de la 0007)
