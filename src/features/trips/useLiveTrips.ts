@@ -2,15 +2,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { liveDelay, startPolling } from '@/lib/polling';
 import { subscribeWithSession } from '@/lib/supabase/realtime';
 import { fetchTodayTrips } from './query';
 import type { Trip, Vehicle } from './types';
 
-const POLL_MS = 10_000;
-
 /**
  * Salidas de hoy en vivo (E5-H1): Supabase Realtime empuja cada cambio de trips y vehicles
- * y, si el WebSocket cae con la red, se vuelve a consultar cada 10 s (también cubre un evento de Realtime perdido).
+ * y, si el WebSocket cae con la red, se vuelve a consultar cada 10 s. Con Realtime conectado se consulta
+ * cada 60 s solo como respaldo de un evento perdido, y nunca con la app minimizada.
  */
 export function useLiveTrips(initial: Trip[]) {
   const [trips, setTrips] = useState(initial);
@@ -31,6 +31,8 @@ export function useLiveTrips(initial: Trip[]) {
 
   useEffect(() => {
     const supabase = createClient();
+    let live = false;
+    let connectedOnce = false;
     const unsubscribe = subscribeWithSession(supabase, () =>
       supabase
         .channel('navia-live')
@@ -49,16 +51,18 @@ export function useLiveTrips(initial: Trip[]) {
           const v = p.new as Vehicle;
           setTrips((prev) => prev.map((t) => (t.vehicle_id === v.id ? { ...t, vehicles: { ...t.vehicles, ...v } } : t)));
         }),
+      (connected) => {
+        // Al reconectar (no en la primera conexión) pudo perderse algo mientras estuvo caído.
+        if (connected && !live && connectedOnce) void refetch();
+        if (connected) connectedOnce = true;
+        live = connected;
+      },
     );
 
-    const poll = setInterval(() => {
-      if (navigator.onLine) void refetch();
-    }, POLL_MS);
+    const stopPolling = startPolling(refetch, () => liveDelay(live));
     const tick = setInterval(() => setNow(Date.now()), 15_000);
-    const onOnline = () => {
-      setOnline(true);
-      void refetch();
-    };
+    // Al volver la señal, startPolling ya consulta de inmediato.
+    const onOnline = () => setOnline(true);
     const onOffline = () => setOnline(false);
     setOnline(navigator.onLine);
     window.addEventListener('online', onOnline);
@@ -66,7 +70,7 @@ export function useLiveTrips(initial: Trip[]) {
 
     return () => {
       unsubscribe();
-      clearInterval(poll);
+      stopPolling();
       clearInterval(tick);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);

@@ -6,6 +6,10 @@ const withSerwist = withSerwistInit({
   swDest: 'public/sw.js',
   // En desarrollo el service worker estorba (caché vieja); solo en build.
   disable: process.env.NODE_ENV === 'development',
+  // Solo lo que hace falta para abrir sin señal. Por defecto entra todo public/, y eso incluía el
+  // video de bienvenida (8,9 MB) que cada teléfono bajaba en segundo plano en su primera visita.
+  // El video se baja solo si alguien lo reproduce; los íconos grandes los pide el navegador al instalar.
+  globPublicPatterns: ['brand/**/*', 'icons/icon-192.png', 'video/*.webp'],
 });
 
 // Supabase (API, Realtime y fotos) y las teselas del mapa (Esri y, de respaldo, OpenStreetMap).

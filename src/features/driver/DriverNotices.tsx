@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/icons';
+import { startPolling } from '@/lib/polling';
 
 const POLL_MS = 20_000;
 type Notice = { id: string; body: string; created_at: string };
@@ -35,10 +36,10 @@ export function DriverNotices() {
       }
     };
     void load();
-    const id = setInterval(load, POLL_MS);
+    const stop = startPolling(load, () => POLL_MS);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      stop();
     };
   }, [router]);
 

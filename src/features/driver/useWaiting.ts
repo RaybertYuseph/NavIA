@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { startPolling } from '@/lib/polling';
 
 const POLL_MS = 10_000;
 
-/** Estudiantes en espera por parada de la salida, consultado cada 10 s mientras haya señal. */
+/** Estudiantes en espera por parada de la salida, consultado cada 10 s mientras haya señal y la app esté abierta. */
 /** onGone: la salida ya no existe (el fiscal reinició la demo). */
 export function useWaiting(tripId: string, initial: Record<string, number>, enabled: boolean, onGone?: () => void) {
   const [waiting, setWaiting] = useState(initial ?? {});
@@ -30,10 +31,10 @@ export function useWaiting(tripId: string, initial: Record<string, number>, enab
       }
     };
     void load();
-    const id = setInterval(load, POLL_MS);
+    const stop = startPolling(load, () => POLL_MS);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      stop();
     };
   }, [tripId, enabled]);
 

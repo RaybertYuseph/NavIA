@@ -6,13 +6,17 @@ import type { createClient } from './client';
  * conectar antes de leer la sesión de las cookies y quedar como anónimo, y entonces RLS le
  * oculta las filas y no llega ningún cambio. Devuelve la función para cancelar.
  */
-export function subscribeWithSession(supabase: ReturnType<typeof createClient>, makeChannel: () => RealtimeChannel) {
+export function subscribeWithSession(
+  supabase: ReturnType<typeof createClient>,
+  makeChannel: () => RealtimeChannel,
+  onStatus?: (connected: boolean) => void,
+) {
   let channel: RealtimeChannel | null = null;
   let cancelled = false;
   void (async () => {
     const { data } = await supabase.auth.getSession();
     if (data.session) await supabase.realtime.setAuth(data.session.access_token);
-    if (!cancelled) channel = makeChannel().subscribe();
+    if (!cancelled) channel = makeChannel().subscribe((status) => onStatus?.(status === 'SUBSCRIBED'));
   })();
   return () => {
     cancelled = true;
