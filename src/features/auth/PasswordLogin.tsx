@@ -1,11 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PASSWORD_MIN, normalizeCedula, normalizeEmail, normalizePhone } from '@/lib/email';
 import { FormError } from './FormError';
 
-type Mode = 'entrar' | 'crear';
+type Mode = 'entrar' | 'crear' | 'olvido';
 
 const inputClass = 'rounded-xl border border-slate-300 bg-white p-4 text-lg';
 
@@ -23,10 +23,67 @@ export function PasswordLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Vuelta desde un enlace de recuperar contraseña que ya no sirve.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('aviso') === 'enlace-vencido') {
+      setMode('olvido');
+      setError('Ese enlace ya se usó o venció. Pide uno nuevo.');
+      document.querySelector('details')?.setAttribute('open', ''); // en modo demo el formulario va plegado
+    }
+  }, []);
 
   function switchMode(next: Mode) {
     setMode(next);
     setError(null);
+    setNotice(null);
+  }
+
+  async function sendReset(e: React.FormEvent) {
+    e.preventDefault();
+    const normalized = normalizeEmail(email);
+    if (!normalized) return setError('Escribe un correo válido, por ejemplo ana@gmail.com.');
+    setBusy(true);
+    setError(null);
+    const { error } = await createClient().auth.resetPasswordForEmail(normalized, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/nueva-clave`,
+    });
+    setBusy(false);
+    if (error?.status === 429) return setError('Ya te enviamos un enlace hace poco. Espera unos minutos y revisa tu correo.');
+    if (error) return setError(`No pudimos enviar el correo. Revisa tu señal e intenta de nuevo. (${error.message})`);
+    // Mismo mensaje exista o no la cuenta: no revela qué correos están registrados.
+    setNotice(`Si hay una cuenta con ${normalized}, te llegó un enlace para elegir una contraseña nueva. Revisa también la carpeta de spam.`);
+  }
+
+  if (mode === 'olvido') {
+    return (
+      <>
+        <form onSubmit={sendReset} className="flex flex-col gap-3">
+          <p className="text-sm text-slate-600">Te enviamos un enlace a tu correo para que elijas una contraseña nueva.</p>
+          <label className="text-sm font-medium" htmlFor="email">Correo</label>
+          <input
+            id="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            placeholder="tucorreo@gmail.com"
+            className={inputClass}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button disabled={busy} className="rounded-xl bg-linear-to-r from-brand-500 to-indigo-500 p-4 text-lg font-semibold text-white shadow-lg shadow-brand-500/30 disabled:opacity-50">
+            {busy ? 'Enviando…' : 'Enviarme el enlace'}
+          </button>
+        </form>
+        {notice && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
+        <FormError message={error} />
+        <button type="button" onClick={() => switchMode('entrar')} className="text-sm font-semibold text-brand-700">
+          Volver a entrar
+        </button>
+      </>
+    );
   }
 
   async function submit(e: React.FormEvent) {
@@ -135,6 +192,11 @@ export function PasswordLogin() {
       </form>
 
       <FormError message={error} />
+      {mode === 'entrar' && (
+        <button type="button" onClick={() => switchMode('olvido')} className="text-sm font-semibold text-brand-700">
+          ¿Olvidaste tu contraseña?
+        </button>
+      )}
     </>
   );
 }
