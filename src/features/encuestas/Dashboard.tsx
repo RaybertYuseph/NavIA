@@ -227,9 +227,9 @@ export function Dashboard(props: { rows: Encuesta[]; error: string | null; event
         <section className="card rounded-3xl p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-extrabold">Prueba NavIA de 7 días</h1>
+              <h1 className="text-2xl font-extrabold">Prueba NavIA (extendida)</h1>
               <p className="text-sm text-slate-600">
-                Mar 27 oct → corte lun 2 nov a las 12:00 · decisión mar 3 nov ·{' '}
+                Mar 27 oct → corte vie 7 nov a las 23:59 (extendida desde el lun 2 nov) · decisión lun 10 nov ·{' '}
                 <b>{quedan > 0 ? `quedan ${quedan} ${quedan === 1 ? 'día' : 'días'}` : 'prueba cerrada'}</b>
               </p>
             </div>

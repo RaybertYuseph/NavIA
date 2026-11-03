@@ -23,7 +23,7 @@ export type Meter = { label: string; value: number; display: string; target: num
 
 export const RESPONSABLE = 'Raybert Rodelo';
 
-export const PRUEBA = { inicio: '2026-10-27', corte: '2026-11-02T12:00:00-04:00', decision: '2026-11-03', estudiantes: 40, conductores: 5 };
+export const PRUEBA = { inicio: '2026-10-27', corte: '2026-11-07T23:59:00-04:00', decision: '2026-11-10', estudiantes: 40, conductores: 5 };
 /** Con menos respuestas que esto un porcentaje no dice nada todavía. */
 const MIN_ESTUDIANTES = 10;
 
