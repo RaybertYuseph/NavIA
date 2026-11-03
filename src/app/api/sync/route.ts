@@ -36,6 +36,16 @@ export async function POST(req: Request) {
       out.done.push(item.id);
       if (error) out.rejected.push({ id: item.id, reason: error.message });
     }
+    // Un envío del conductor que se pierde para siempre: queda registrado para revisarlo.
+    if (error) {
+      await supabase.rpc('log_client_error', {
+        p_kind: 'sync',
+        p_message: `${group[0].kind} rechazado (${error.code}): ${error.message}`,
+        p_path: '/api/sync',
+        p_user_agent: req.headers.get('user-agent'),
+        p_online: true,
+      });
+    }
     i += group.length;
   }
 
