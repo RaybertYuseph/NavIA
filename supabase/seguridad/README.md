@@ -40,9 +40,9 @@ leerla. Después del corte del 2 de noviembre, cámbiala:
    piloto y su contraseña es pública: con ella se reinicia el día, se desincorporan unidades y se
    cambian fotos. Lo más simple: un segundo proyecto de Supabase (gratis) solo para la demo, y en
    el proyecto real `NEXT_PUBLIC_DEMO=0`.
-2. **Solo estudiantes aprobados ven la línea.** SQL Editor → pega
-   `supabase/seguridad/piloto_solo_verificados.sql` → Run. Hasta que el panel tenga botón de
-   aprobar, se aprueba con el SQL que trae el archivo al inicio.
+2. **Solo estudiantes aprobados ven la línea.** Primero aplica la migración
+   `0017_aprobar_estudiantes.sql` (el fiscal aprueba en la pestaña **Estudiantes** del panel).
+   Luego SQL Editor → pega `supabase/seguridad/piloto_solo_verificados.sql` → Run.
 
 ## 5. Vercel y GitHub
 

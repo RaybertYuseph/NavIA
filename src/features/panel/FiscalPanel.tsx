@@ -9,6 +9,7 @@ import { fiscalTip, lineStatus, mostWaiting, staleUnits, type LineSummary } from
 import { useGuide } from '@/features/guide/GuideProvider';
 import { NaviaFab } from '@/features/guide/NaviaFab';
 import { NewDepartureSheet, StartQueue } from './Departures';
+import { StudentsReview, type StudentToReview } from './StudentsReview';
 import { UnitsManager, type Unit, type UnitState } from './UnitsManager';
 import { BusMap } from '@/features/map/BusMap';
 import { groupByRoute, waitingByRoute } from '@/features/trips/derive';
@@ -25,7 +26,13 @@ const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
  * Vista del fiscal de la línea: unidades, mapa en vivo y salidas de hoy. Las fichas de arriba
  * filtran todo por corredor (ida y regreso de una misma ruta) y se recuerdan en este teléfono.
  */
-export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehicle[]; routes: RouteInfo[]; drivers: Record<string, string> }) {
+export function FiscalPanel(props: {
+  initialTrips: Trip[];
+  initialVehicles: Vehicle[];
+  routes: RouteInfo[];
+  drivers: Record<string, string>;
+  initialStudents: StudentToReview[] | null;
+}) {
   const { trips: allTrips, now, online, refetch } = useLiveTrips(props.initialTrips);
   const [vehicles, setVehicles] = useLiveVehicles(props.initialVehicles);
   const { tab } = useGuide();
@@ -34,6 +41,8 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
   const routeIds = corridor ? new Set(props.routes.filter((r) => routeKey(r) === corridor).map((r) => r.id)) : null;
   const trips = routeIds ? allTrips.filter((t) => routeIds.has(t.route_id)) : allTrips;
   const [creating, setCreating] = useState(false);
+  const [students, setStudents] = useState(props.initialStudents);
+  const toReview = students?.filter((s) => s.status === 'pending').length ?? 0;
   const shownRoutes = routeIds ? props.routes.filter((r) => routeIds.has(r.id)) : props.routes;
 
   const units: Unit[] = vehicles
@@ -64,10 +73,11 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
           { id: 'resumen', label: 'Resumen', icon: 'grid' },
           { id: 'unidades', label: 'Unidades', icon: 'bus', badge: counts.en_ruta },
           { id: 'salidas', label: 'Salidas', icon: 'list' },
+          { id: 'estudiantes', label: 'Estudiantes', icon: 'users', badge: toReview },
         ]}
       />
 
-      {corridors.length > 1 && (
+      {corridors.length > 1 && tab !== 'estudiantes' && (
         <nav aria-label="Filtrar por ruta" data-tour="rutas" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           {[{ key: null, soon: false }, ...corridors].map((c) => {
             const active = c.key === corridor;
@@ -143,6 +153,10 @@ export function FiscalPanel(props: { initialTrips: Trip[]; initialVehicles: Vehi
           setVehicles={setVehicles}
           onTripsChanged={() => void refetch()}
         />
+      )}
+
+      {tab === 'estudiantes' && (
+        <StudentsReview students={students} setStudents={(fn) => setStudents((prev) => (prev ? fn(prev) : prev))} />
       )}
 
       {tab === 'salidas' && (
