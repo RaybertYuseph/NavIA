@@ -57,6 +57,12 @@ Abre la app en dos ventanas (una como conductor, otra como estudiante) y toca lo
 2. *Environment Variables:* `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_DEMO=1`, `NEXT_PUBLIC_DEMO_PASSWORD`.
 3. *Deploy.* En Supabase → Authentication → URL Configuration, pon la URL de Vercel en *Site URL*.
 
+## Monitoreo de errores
+
+Cada teléfono reporta a Supabase los errores que le pasan (pantalla que falla, error de JavaScript, promesa rota) y `/api/sync` reporta los envíos del conductor que se rechazan para siempre. Se guardan en `client_errors` (migración 0018), recortados y con topes (20 por minuto por cuenta, 600 en total), y se borran a los 30 días. Sin Sentry: no suma JavaScript a la carga ni otra cuenta.
+
+Para verlos: Supabase → **SQL Editor** → `select * from errores_resumen;` (últimos 7 días agrupados: veces, personas, última pantalla y rol). El detalle con la traza: `select * from client_errors order by created_at desc limit 50;`.
+
 ## Pruebas
 
 ```bash
@@ -85,6 +91,7 @@ supabase/
   migrations/0013_simulacion_demo.sql  demo: salidas de ejemplo que se mueven solas, para el tour y el botón "Simular salidas"
   migrations/0014 a 0016       encuestas, eventos de la demo y seguridad (ver supabase/seguridad/README.md)
   migrations/0017_aprobar_estudiantes.sql  registro con cédula y teléfono; el fiscal aprueba o rechaza en la pestaña Estudiantes
+  migrations/0018_errores.sql  registro de errores de los teléfonos (client_errors y errores_resumen)
   demo.sql                     cuentas, unidades y salidas de la demo
   rutas_proximamente.sql       La Guaira, California y Baruta como rutas de ejemplo (después de la 0007)
   rutas_regreso.sql            la vuelta desde la USM de cada ruta de ida (paradas invertidas; después de la 0007)

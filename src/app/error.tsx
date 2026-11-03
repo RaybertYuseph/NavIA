@@ -2,13 +2,17 @@
 import { useEffect } from 'react';
 import { useLeave } from '@/features/auth/useLeave';
 import { NaviaAgent } from '@/features/brand/NaviaAgent';
+import { reportError } from '@/lib/errorReport';
 
 const DEMO = process.env.NEXT_PUBLIC_DEMO === '1';
 
 /** Si una vista falla en el servidor: un mensaje claro y dos salidas, en vez de la página de error en blanco. */
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const { leaving, leave } = useLeave('local');
-  useEffect(() => console.error(error), [error]);
+  useEffect(() => {
+    console.error(error);
+    reportError('pantalla', error.digest ? Object.assign(new Error(`${error.message} (código ${error.digest})`), { name: error.name, stack: error.stack }) : error);
+  }, [error]);
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col items-center justify-center gap-3 p-6 text-center">
       <NaviaAgent size={120} animated />
