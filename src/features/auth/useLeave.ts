@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { markLeavingHere } from '@/components/SessionGuard';
 import { createClient } from '@/lib/supabase/client';
 import { readAudience } from './demoAccess';
 
@@ -14,6 +15,7 @@ export function useLeave(scope: 'local' | 'global') {
   const [leaving, setLeaving] = useState(false);
   const leave = useCallback(async () => {
     setLeaving(true);
+    markLeavingHere();
     try {
       await createClient().auth.signOut({ scope });
     } catch {

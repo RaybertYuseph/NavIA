@@ -28,13 +28,15 @@ export function AvailableAtStop({ vehicles, routes, myVehicleId }: { vehicles: V
 
   async function activate() {
     if (!vehicle || !route) return;
+    if (!departAt) return setError('Escribe la hora de salida.');
     setBusy(true);
     setError(null);
-    if (!departAt) return setError('Escribe la hora de salida.');
     const e = await postAtStop(vehicle.id, route.id, departAt);
     if (e) {
       setBusy(false);
-      return setError(e);
+      setError(e);
+      // Otro teléfono con la misma cuenta pudo crear la salida: se trae lo último del servidor.
+      return router.refresh();
     }
     navigator.vibrate?.(80);
     router.refresh();
