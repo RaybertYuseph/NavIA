@@ -5,6 +5,7 @@ import { Icon } from '@/components/icons';
 import { askResumeSurvey, pendingSurvey } from '@/features/guide/demoProgress';
 import { forgetDemoTour } from '@/features/guide/demoSim';
 import { rememberCanal, trackDemo } from '@/features/guide/demoTrack';
+import { ResetDemoButton } from '@/features/guide/ResetDemoButton';
 import { SURVEYS, visibleQuestions } from '@/features/guide/surveys';
 import { AUDIENCES, DEMO_ROLES, demoSignIn, rememberAudience, type Audience } from './demoAccess';
 import { FormError } from './FormError';
@@ -89,6 +90,12 @@ export function DemoLogin({ audience = null }: { audience?: Audience | null }) {
         </button>
       ))}
       <FormError message={error} />
+      {/* Solo en la entrada de la presentación (/login), no en los enlaces de la encuesta. */}
+      {!audience && (
+        <div className="mt-2">
+          <ResetDemoButton />
+        </div>
+      )}
     </section>
   );
 }
