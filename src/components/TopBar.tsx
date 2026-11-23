@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ConfirmSheet } from './ConfirmSheet';
+import { RESET_BODY, RESET_TITLE, resetDemoForEveryone } from '@/features/guide/ResetDemoButton';
 import { NaviaLogo } from '@/features/brand/NaviaAgent';
 import { readAudience } from '@/features/auth/demoAccess';
 import { useLeave } from '@/features/auth/useLeave';
@@ -17,6 +20,9 @@ export function TopBar({ name, role, wide, admin = false }: { name: string; role
   const { startTour, openSurvey, openVideo } = useGuide();
   const { leaving, leave } = useLeave(DEMO ? 'local' : 'global');
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [asking, setAsking] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
   // Encuesta solo para quien entró por un enlace de demo (se lee después de montar: vive en el navegador).
   const [survey, setSurvey] = useState(false);
   useEffect(() => setSurvey(DEMO && readAudience() !== null), []);
@@ -109,6 +115,19 @@ export function TopBar({ name, role, wide, admin = false }: { name: string; role
                   <Icon name="list" className="h-5 w-5 text-brand-500" /> Responder la encuesta
                 </button>
               )}
+              {DEMO && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    setAsking(true);
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-brand-700 hover:bg-slate-50"
+                >
+                  <span aria-hidden className="flex h-5 w-5 items-center justify-center text-base">↺</span> Reiniciar demo
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"
@@ -122,6 +141,28 @@ export function TopBar({ name, role, wide, admin = false }: { name: string; role
           )}
         </div>
       </div>
+      {resetMsg && (
+        <p role="status" className="mx-auto max-w-md px-4 pb-2 text-center text-sm font-medium text-slate-700">
+          {resetMsg}
+        </p>
+      )}
+      {asking && (
+        <ConfirmSheet
+          title={RESET_TITLE}
+          body={RESET_BODY}
+          confirmLabel="Sí, reiniciar"
+          cancelLabel="Cancelar"
+          onConfirm={async () => {
+            setAsking(false);
+            setResetMsg('Reiniciando la demo…');
+            const msg = await resetDemoForEveryone();
+            setResetMsg(msg);
+            router.refresh();
+            setTimeout(() => setResetMsg(null), 6000);
+          }}
+          onCancel={() => setAsking(false)}
+        />
+      )}
     </header>
   );
 }

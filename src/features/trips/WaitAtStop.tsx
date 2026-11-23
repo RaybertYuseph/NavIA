@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { startDemoSimulation } from '@/features/guide/demoSim';
 import { SelectField } from '@/components/SelectField';
 import { distanceM } from '@/lib/geo';
 import { createClient } from '@/lib/supabase/client';
@@ -90,8 +92,12 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
     };
   }, [wait, myCount]);
 
-  const trip = trips.find((t) => t.id === (wait?.trip_id ?? tripId ?? preferredTripId)) ?? open[0] ?? null;
-  if (!trip) return null;
+  // Una espera de una salida que ya no está en la lista (borrada o de otro día) no se muestra.
+  const waitTrip = wait ? trips.find((t) => t.id === wait.trip_id) ?? null : null;
+  // Para elegir parada solo sirven salidas abiertas; si la elegida ya cerró se toma la primera abierta.
+  const pickable = (id: string | null) => open.find((t) => t.id === id) ?? null;
+  const trip = waitTrip ?? pickable(tripId) ?? pickable(preferredTripId) ?? open[0] ?? null;
+  if (!trip) return <NoOpenTrips />;
 
   async function save(next: MyWait | null, at?: Point) {
     if (!trip) return;
@@ -130,7 +136,7 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
     await save({ trip_id: trip.id, stop_id: stop.id }, at);
   }
 
-  if (wait) {
+  if (wait && waitTrip) {
     const stops = sortedStops(trip);
     const mine = stops.find((s) => s.id === wait.stop_id);
     const myIdx = stops.findIndex((s) => s.id === wait.stop_id);
@@ -143,7 +149,16 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         <Card>
           <p className="text-lg font-bold">🚌 ¡Llegó tu camioneta a {mine?.name}!</p>
           <p className="text-sm text-slate-600">¡Buen viaje, pana!</p>
-          <button type="button" onClick={() => setWait(null)} className="btn-ghost mt-3 w-full">
+          <button
+            type="button"
+            onClick={() => {
+              setWait(null);
+              setTripId(null);
+              setStopId('');
+              setError(null);
+            }}
+            className="btn-ghost mt-3 w-full"
+          >
             Marcar otra parada
           </button>
         </Card>
@@ -273,6 +288,38 @@ export function WaitAtStop({ trips, preferredTripId }: { trips: Trip[]; preferre
         )}
         <p className="text-xs text-slate-500">Uso tu ubicación solo para confirmar que estás a menos de {RANGE_M} m de la parada.</p>
       </form>
+    </Card>
+  );
+}
+
+/** Sin salidas abiertas: se explica en vez de dejar el espacio en blanco (en la demo, se pueden simular). */
+function NoOpenTrips() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  return (
+    <Card>
+      <p className="font-bold">Ahora no hay salidas abiertas</p>
+      <p className="text-sm text-slate-600">
+        Podrás marcar tu parada apenas un conductor confirme su unidad o arranque la camioneta.
+      </p>
+      {DEMO && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            const created = await startDemoSimulation();
+            setBusy(false);
+            setMessage(created === null ? 'No se pudo simular. Prueba otra vez.' : null);
+            router.refresh();
+          }}
+          className="btn-primary mt-3 w-full disabled:opacity-60"
+        >
+          {busy ? 'Simulando…' : 'Simular salidas (demo)'}
+        </button>
+      )}
+      {message && <p className="mt-2 text-sm text-red-700">{message}</p>}
     </Card>
   );
 }

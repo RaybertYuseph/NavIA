@@ -106,6 +106,7 @@ export function FiscalPanel(props: {
 
       {tab === 'resumen' && (
       <>
+      {DEMO && <ResetDemo onDone={refetch} />}
       <section data-tour="kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Kpi label="En ruta" value={counts.en_ruta} tone="text-emerald-700" />
         <Kpi label="Disponibles" value={counts.disponible} tone="text-sky-700" />
@@ -138,7 +139,6 @@ export function FiscalPanel(props: {
         )}
       </section>
 
-      {DEMO && <ResetDemo onDone={refetch} />}
       </>
       )}
 
