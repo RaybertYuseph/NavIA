@@ -50,6 +50,8 @@ export async function postAtStop(vehicleId: string, routeId: string, hhmm: strin
   }).catch(() => null);
   if (res?.ok) return null;
   if (!res) return 'Sin señal: prueba cuando vuelva la conexión.';
+  if (res.status === 401 || res.status === 403)
+    return 'Tu sesión cambió (¿entraste con otro rol en otra pestaña?). Vuelve a entrar como Conductor.';
   if (res.status === 501) return 'Falta aplicar la migración 0008 en Supabase.';
   const { hint } = (await res.json().catch(() => ({}))) as { hint?: string };
   if (hint === 'hora_ocupada') return 'No se pudo cambiar la hora: ya sale otra unidad de esta ruta a esa hora. Elige otra.';

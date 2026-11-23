@@ -37,7 +37,9 @@ export function AvailabilityToggle({ vehicle, trip }: { vehicle: Vehicle; trip: 
       if (!navigator.onLine) return setError('Sin señal: prueba cuando vuelva la conexión.');
       if (ok === 'fuera_de_servicio') return setError('El fiscal marcó esta unidad fuera de servicio.');
       if (ok === 'en_ruta') return setError('Tu unidad tiene una salida en curso: termina la ruta primero.');
-      return setError('No se pudo cambiar. Prueba otra vez.');
+      setError('No se pudo cambiar. Prueba otra vez.');
+      // Pudo cambiarlo otro teléfono con la misma cuenta: se trae el estado real.
+      return router.refresh();
     }
     setAvailable(next);
     navigator.vibrate?.(60);
